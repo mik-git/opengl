@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/shaders">
+        <file>vshader.vert</file>
+        <file>fshader.frag</file>
+    </qresource>
+    <qresource prefix="/textures">
+        <file>woodcontainer.png</file>
+    </qresource>
+</RCC>

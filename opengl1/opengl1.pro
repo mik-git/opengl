@@ -27,7 +27,12 @@ contains( CONFIG, qt ) {
 }
 OBJECTS_DIR = ./.o
 
+RESOURCES += \
+    sources.qrc
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+
