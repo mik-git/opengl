@@ -29,14 +29,19 @@ class OpenglWidget : public QOpenGLWidget
 public:
   explicit OpenglWidget(QWidget *parent = nullptr);
   ~OpenglWidget() override;
+  void setFow(float fow);
+  void setNearPlane(float nearPlane);
+  void setFarPlane(float farPlane);
 
 protected:
   void initializeGL() override;
   void resizeGL(int w, int h) override;
   void paintGL() override;
 
+private:
   void initShaders();
   void initCube(float width);
+  void updateParametrs();
 
 
 
@@ -46,7 +51,6 @@ private:
   QOpenGLShaderProgram shaderProgram_;
   QOpenGLTexture* texture_ = nullptr;
   QOpenGLBuffer arrayBuffer_;
-  QOpenGLBuffer indexBuffer_;
   float fow_ = 45.0f;
   float nearPlane_ = 0.1f;
   float farPlane_ = 10.0f;

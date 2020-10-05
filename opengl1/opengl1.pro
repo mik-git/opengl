@@ -11,13 +11,16 @@ CONFIG += c++17
 
 SOURCES += \
         main.cpp \
-        openglwidget.cpp
+        openglwidget.cpp \
+    mainwidget.cpp
 
 HEADERS += \
-        openglwidget.h
+        openglwidget.h \
+    mainwidget.h
 
 FORMS += \
-        openglwidget.ui
+        openglwidget.ui \
+    mainwidget.ui
 
 contains( CONFIG, qt ) {
     MOC_DIR = ./.moc
