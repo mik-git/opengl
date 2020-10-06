@@ -14,7 +14,13 @@ class MainWidget : public QWidget
 
 public:
   explicit MainWidget(QWidget *parent = nullptr);
-  ~MainWidget();
+  ~MainWidget() override;
+
+protected:
+  void keyPressEvent(QKeyEvent* event) override;
+  void mousePressEvent(QMouseEvent* event) override;
+  void mouseMoveEvent(QMouseEvent* event) override;
+  void wheelEvent(QWheelEvent *event) override;
 
 private slots:
   void changeVisibleSettingsSlot();
@@ -23,8 +29,12 @@ private slots:
   void sendFarPlaneSlot(double farPlane);
 
 private:
+  void initValue();
+
+private:
   Ui::MainWidget *ui_ = nullptr;
   OpenglWidget* opengl_ = nullptr;
+  QPointF prevPos_;
 };
 
 #endif // MAINWIDGET_H

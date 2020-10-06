@@ -7,6 +7,8 @@
 #include <QOpenGLTexture>
 #include <QOpenGLBuffer>
 
+#include "camera.h"
+
 struct Vertex
 {
   Vertex(){}
@@ -16,7 +18,6 @@ struct Vertex
   QVector2D texturePosition_;
   QVector3D normal_;
 };
-
 
 namespace Ui {
 class OpenglWidget;
@@ -33,6 +34,13 @@ public:
   void setNearPlane(float nearPlane);
   void setFarPlane(float farPlane);
 
+  void goForward();
+  void goBack();
+  void goLeft();
+  void goRight();
+  void rotateCamera(QPoint diff );
+  void switchLamp();
+
 protected:
   void initializeGL() override;
   void resizeGL(int w, int h) override;
@@ -44,16 +52,17 @@ private:
   void updateParametrs();
 
 
-
 private:
   Ui::OpenglWidget *ui_ = nullptr;
   QMatrix4x4 projection_;
   QOpenGLShaderProgram shaderProgram_;
   QOpenGLTexture* texture_ = nullptr;
-  QOpenGLBuffer arrayBuffer_;
+  QOpenGLBuffer cubeVBO_;
   float fow_ = 45.0f;
   float nearPlane_ = 0.1f;
   float farPlane_ = 10.0f;
+  bool lamp_ = false;
+  Camera camera_;
 };
 
 #endif // OPENGLWIDGET_H

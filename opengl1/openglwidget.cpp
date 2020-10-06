@@ -2,8 +2,10 @@
 #include "ui_openglwidget.h"
 
 #include <QDebug>
+#include <QKeyEvent>
+#include <QtMath>
 
-const float kWIDTH = 1.0f;
+static const float kWIDTH = 1.0f;
 
 Vertex::Vertex(QVector3D position, QVector2D texturePosition, QVector3D normal) :
   position_(position),
@@ -18,6 +20,8 @@ OpenglWidget::OpenglWidget(QWidget *parent) :
   ui_(new Ui::OpenglWidget)
 {
   ui_->setupUi(this);
+  camera_.setCameraPosition( QVector3D{0.0f, 0.0f, 3.0f} );
+  camera_.setCameraFront( QVector3D{0.0f, 0.0f, -1.0f} );
 }
 
 OpenglWidget::~OpenglWidget()
@@ -48,6 +52,42 @@ void OpenglWidget::setFarPlane(float farPlane)
   updateParametrs();
 }
 
+void OpenglWidget::goForward()
+{
+  camera_.goForward();
+  updateParametrs();
+}
+
+void OpenglWidget::goBack()
+{
+  camera_.goBack();
+  updateParametrs();
+}
+
+void OpenglWidget::goLeft()
+{
+  camera_.goLeft();
+  updateParametrs();
+}
+
+void OpenglWidget::goRight()
+{
+  camera_.goRight();
+  updateParametrs();
+}
+
+void OpenglWidget::rotateCamera(QPoint diff)
+{
+  camera_.rotateCamera(diff);
+  updateParametrs();
+}
+
+void OpenglWidget::switchLamp()
+{
+  lamp_ = !lamp_;
+  updateParametrs();
+}
+
 void OpenglWidget::initializeGL()
 {
   qDebug() << "initGL";
@@ -74,22 +114,16 @@ void OpenglWidget::paintGL()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   shaderProgram_.bind();
 
-
   QMatrix4x4 model;
   model.setToIdentity();
   model.translate(0.0,0.0,0.0);
-  QVector3D viewPos{-1.0f, 1.0f, 3.0f};
-  QVector3D target{0.0f,0.0f,0.0f};
-  QVector3D up{0.0f, 1.0f, 0.0f};
-  QMatrix4x4 view;
-  view.lookAt(viewPos, target, up);
-
+  auto view = camera_.getView();
   QMatrix4x4 modelViewProjectionMatrix{projection_ * view * model};
   //qDebug() << modelViewProjectionMatrix;
   shaderProgram_.setUniformValue("qt_ModelViewProjectionMatrix", modelViewProjectionMatrix);
   shaderProgram_.setUniformValue("texture0", 0);
   texture_->bind(0);
-  arrayBuffer_.bind();
+  cubeVBO_.bind();
 
   int offset = 0;
 
@@ -103,7 +137,7 @@ void OpenglWidget::paintGL()
   shaderProgram_.enableAttributeArray(texLoc);
   shaderProgram_.setAttributeBuffer(texLoc, GL_FLOAT, offset, 2, sizeof(Vertex));
 
-  glDrawArrays(GL_TRIANGLES, 0, arrayBuffer_.size());
+  glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
 }
 
 void OpenglWidget::initShaders()
@@ -180,10 +214,10 @@ void OpenglWidget::initCube(float width)
   vertexes.append(Vertex(QVector3D(  halfWidth, -halfWidth, -halfWidth), QVector2D(1.0f, 0.0f), QVector3D(0.0f,-1.0f,0.0f)));
 
 
-  arrayBuffer_.create();
-  arrayBuffer_.bind();
-  arrayBuffer_.allocate(vertexes.constData(), vertexes.size() *  sizeof(Vertex));
-  arrayBuffer_.release();
+  cubeVBO_.create();
+  cubeVBO_.bind();
+  cubeVBO_.allocate(vertexes.constData(), vertexes.size() *  sizeof(Vertex));
+  cubeVBO_.release();
 
 
   texture_ = new QOpenGLTexture(QImage(":/textures/woodcontainer.png").mirrored());
@@ -199,3 +233,4 @@ void OpenglWidget::updateParametrs()
   resizeGL(rect.width(), rect.height());
   update();
 }
+
