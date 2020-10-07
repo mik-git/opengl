@@ -48,14 +48,21 @@ protected:
 
 private:
   void initShaders();
+  void initObjectShader();
+  void initLightShader();
   void initCube(float width);
+  void loadTexture(QString path);
+  void paintWoodContainer(QVector3D translate = QVector3D{0,0,0}, float scale = 1.0f,
+                          QVector3D lightPos = QVector3D{0.0f,0.0f,0.0f}, QVector3D lightColor = QVector3D{0.0f,0.0f,0.0f} );
+  void paintLight(QVector3D translate = QVector3D{0,0,0}, QVector3D color = QVector3D{1.0f,1.0f,1.0f}, float scale = 1.0f );
   void updateParametrs();
 
 
 private:
   Ui::OpenglWidget *ui_ = nullptr;
   QMatrix4x4 projection_;
-  QOpenGLShaderProgram shaderProgram_;
+  QOpenGLShaderProgram objectShader_;
+  QOpenGLShaderProgram lightShader_;
   QOpenGLTexture* texture_ = nullptr;
   QOpenGLBuffer cubeVBO_;
   float fow_ = 45.0f;

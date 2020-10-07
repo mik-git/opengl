@@ -18,6 +18,8 @@ public:
   void goRight();
   void rotateCamera(QPoint diff );
 
+  QVector3D cameraPosition() { return  cameraPos_; }
+
 private:
   QVector3D cameraPos_{0.0f, 0.0f, 3.0f};
   QVector3D cameraFront_{0.0f, 0.0f, -1.0f};

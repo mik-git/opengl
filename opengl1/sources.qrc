@@ -1,7 +1,9 @@
 <RCC>
     <qresource prefix="/shaders">
-        <file>vshader.vert</file>
-        <file>fshader.frag</file>
+        <file>vObjectShader.vert</file>
+        <file>fObjectShader.frag</file>
+        <file>fLightShader.frag</file>
+        <file>vLightShader.vert</file>
     </qresource>
     <qresource prefix="/textures">
         <file>woodcontainer.png</file>

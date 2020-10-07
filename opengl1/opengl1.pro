@@ -17,8 +17,8 @@ SOURCES += \
 
 HEADERS += \
         openglwidget.h \
-    mainwidget.h \
-    camera.h
+        mainwidget.h \
+        camera.h
 
 FORMS += \
         openglwidget.ui \

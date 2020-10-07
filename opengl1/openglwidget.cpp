@@ -6,6 +6,7 @@
 #include <QtMath>
 
 static const float kWIDTH = 1.0f;
+static const QString kWoodContainer = QString(":/textures/woodcontainer.png");
 
 Vertex::Vertex(QVector3D position, QVector2D texturePosition, QVector3D normal) :
   position_(position),
@@ -95,12 +96,13 @@ void OpenglWidget::switchLamp()
 void OpenglWidget::initializeGL()
 {
   qDebug() << "initGL";
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glEnable(GL_DEPTH_TEST);
   //glEnable(GL_CULL_FACE);
 
-  initShaders();
+  loadTexture(kWoodContainer);
   initCube(kWIDTH);
+  initShaders();
 }
 
 void OpenglWidget::resizeGL(int w, int h)
@@ -116,51 +118,90 @@ void OpenglWidget::paintGL()
 {
   qDebug() << "paint";
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  shaderProgram_.bind();
 
-  QMatrix4x4 model;
-  model.setToIdentity();
-  model.translate(0.0,0.0,0.0);
-  auto view = camera_.getView();
-  QMatrix4x4 modelViewProjectionMatrix{projection_ * view * model};
-  //qDebug() << modelViewProjectionMatrix;
-  shaderProgram_.setUniformValue("qt_ModelViewProjectionMatrix", modelViewProjectionMatrix);
-  shaderProgram_.setUniformValue("texture0", 0);
-  texture_->bind(0);
-  cubeVBO_.bind();
+  QVector3D lightPos{-3.0, 3.0, 0.0};
+  QVector3D lightColor{1.0, 1.0, 1.0};
 
-  int offset = 0;
+  paintLight(lightPos, lightColor, 0.25f);
 
-  auto vertLoc = shaderProgram_.attributeLocation("inPos");
-  shaderProgram_.enableAttributeArray(vertLoc);
-  shaderProgram_.setAttributeBuffer(vertLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
+  QVector3D containerPos1{0.0, 0.0, 0.0};
+  paintWoodContainer(containerPos1, 1.0f, lightPos, lightColor);
+  QVector3D containerPos2{2.0, 0.0, -2.0};
+  paintWoodContainer(containerPos2, 1.0f, lightPos, lightColor);
 
-  offset += sizeof (QVector3D);
-
-  auto texLoc = shaderProgram_.attributeLocation("inTexCoord");
-  shaderProgram_.enableAttributeArray(texLoc);
-  shaderProgram_.setAttributeBuffer(texLoc, GL_FLOAT, offset, 2, sizeof(Vertex));
-
-  glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
 }
 
 void OpenglWidget::initShaders()
 {
-  if ( shaderProgram_.isLinked() ) { return;}
-  qDebug() << "init shader";
-  if (!shaderProgram_.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader.vert")) {
+  initObjectShader();
+  initLightShader();
+}
+
+void OpenglWidget::initObjectShader()
+{
+  if ( objectShader_.isLinked() ) { return;}
+  qDebug() << "init object shader";
+  if (!objectShader_.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vObjectShader.vert")) {
     qDebug() << "Error vertex shader";
     close();
   }
-  if (!shaderProgram_.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader.frag")) {
+  if (!objectShader_.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fObjectShader.frag")) {
     qDebug() << "Error fragment shader";
     close();
   }
-  if (!shaderProgram_.link()) {
+  if (!objectShader_.link()) {
     qDebug() << "Error link shader program";
     close();
   }
-  shaderProgram_.bind();
+  objectShader_.bind();
+
+  cubeVBO_.bind();
+
+  int offset = 0;
+
+  auto vertLoc = objectShader_.attributeLocation("inPos");
+  objectShader_.enableAttributeArray(vertLoc);
+  objectShader_.setAttributeBuffer(vertLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
+
+  offset += sizeof (QVector3D);
+
+  auto texLoc = objectShader_.attributeLocation("inTexCoord");
+  objectShader_.enableAttributeArray(texLoc);
+  objectShader_.setAttributeBuffer(texLoc, GL_FLOAT, offset, 2, sizeof(Vertex));
+
+  offset += sizeof (QVector2D);
+
+  auto normalLoc = objectShader_.attributeLocation("inNormal");
+  objectShader_.enableAttributeArray(normalLoc);
+  objectShader_.setAttributeBuffer(normalLoc, GL_FLOAT, offset, 2, sizeof(Vertex));
+}
+
+void OpenglWidget::initLightShader()
+{
+  if ( lightShader_.isLinked() ) { return;}
+  qDebug() << "init light shader";
+  if (!lightShader_.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vLightShader.vert")) {
+    qDebug() << "Error vertex shader";
+    close();
+  }
+  if (!lightShader_.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fLightShader.frag")) {
+    qDebug() << "Error fragment shader";
+    close();
+  }
+  if (!lightShader_.link()) {
+    qDebug() << "Error link shader program";
+    close();
+  }
+  lightShader_.bind();
+
+  cubeVBO_.bind();
+
+  int offset = 0;
+
+  auto vertLoc = lightShader_.attributeLocation("inPos");
+  lightShader_.enableAttributeArray(vertLoc);
+  lightShader_.setAttributeBuffer(vertLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
+
 }
 
 void OpenglWidget::initCube(float width)
@@ -222,13 +263,54 @@ void OpenglWidget::initCube(float width)
   cubeVBO_.bind();
   cubeVBO_.allocate(vertexes.constData(), vertexes.size() *  sizeof(Vertex));
   cubeVBO_.release();
+}
 
-
-  texture_ = new QOpenGLTexture(QImage(":/textures/woodcontainer.png").mirrored());
+void OpenglWidget::loadTexture(QString path)
+{
+  texture_ = new QOpenGLTexture(QImage(path).mirrored());
   texture_->setMinificationFilter(QOpenGLTexture::Nearest);
   texture_->setMagnificationFilter(QOpenGLTexture::Linear);
   texture_->setWrapMode(QOpenGLTexture::Repeat);
+}
 
+void OpenglWidget::paintWoodContainer(QVector3D position, float scale, QVector3D lightPos, QVector3D lightColor)
+{
+  QMatrix4x4 model;
+  model.setToIdentity();
+  model.translate(position);
+  model.scale(scale);
+
+  objectShader_.bind();
+  auto view = camera_.getView();
+
+  objectShader_.setUniformValue("model", model);
+  objectShader_.setUniformValue("view", view);
+  objectShader_.setUniformValue("projection", projection_);
+  objectShader_.setUniformValue("lightPos", lightPos);
+  objectShader_.setUniformValue("lightColor", lightColor);
+  objectShader_.setUniformValue("viewPos", camera_.cameraPosition());
+  texture_->bind(0);
+  objectShader_.setUniformValue("texture0", 0);
+
+  glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
+}
+
+void OpenglWidget::paintLight(QVector3D position, QVector3D color, float scale)
+{
+  QMatrix4x4 model;
+  model.setToIdentity();
+  model.translate(position);
+  model.scale(scale);
+
+  lightShader_.bind();
+  auto view = camera_.getView();
+  QMatrix4x4 modelViewProjectionMatrix{projection_ * view * model};
+  //qDebug() << modelViewProjectionMatrix;
+  lightShader_.setUniformValue("qt_ModelViewProjectionMatrix", modelViewProjectionMatrix);
+  lightShader_.setUniformValue("color", color);
+
+
+  glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
 }
 
 void OpenglWidget::updateParametrs()
