@@ -22,6 +22,10 @@ OpenglWidget::OpenglWidget(QWidget *parent) :
   ui_->setupUi(this);
   camera_.setCameraPosition( QVector3D{0.0f, 0.0f, 3.0f} );
   camera_.setCameraFront( QVector3D{0.0f, 0.0f, -1.0f} );
+  QSurfaceFormat glFormat;
+  glFormat.setVersion(3, 3);
+  glFormat.setProfile(QSurfaceFormat::CoreProfile);
+  QSurfaceFormat::setDefaultFormat(glFormat);
 }
 
 OpenglWidget::~OpenglWidget()
