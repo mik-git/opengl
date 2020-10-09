@@ -1,11 +1,13 @@
 <RCC>
-    <qresource prefix="/shaders">
-        <file>vObjectShader.vert</file>
-        <file>fObjectShader.frag</file>
-        <file>fLightShader.frag</file>
-        <file>vLightShader.vert</file>
-    </qresource>
-    <qresource prefix="/textures">
-        <file>woodcontainer.png</file>
+    <qresource prefix="/">
+        <file>textures/woodcontainer.png</file>
+        <file>textures/wood.png</file>
+        <file>shaders/fLightShader.frag</file>
+        <file>shaders/fNormalObjectShader.frag</file>
+        <file>shaders/fObjectShader.frag</file>
+        <file>shaders/vLightShader.vert</file>
+        <file>shaders/vObjectShader.vert</file>
+        <file>shaders/vNormalObjectShader.vert</file>
+        <file>shaders/gNormalObjectShader.geom</file>
     </qresource>
 </RCC>

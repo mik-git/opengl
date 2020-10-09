@@ -31,6 +31,7 @@ class OpenglWidget : public QOpenGLWidget
 public:
   explicit OpenglWidget(QWidget *parent = nullptr);
   ~OpenglWidget() override;
+
   void setFow(float fow);
   void setNearPlane(float nearPlane);
   void setFarPlane(float farPlane);
@@ -39,7 +40,7 @@ public:
   void goBack();
   void goLeft();
   void goRight();
-  void rotateCamera(QPoint diff );
+  void rotateCamera(const QPoint& diff );
   void switchLamp();
 
 protected:
@@ -51,11 +52,17 @@ private:
   void initShaders();
   void initObjectShader();
   void initLightShader();
+  void initNormalShader();
+  void initScene();
   void initCube(float width);
-  void loadTexture(QString path);
-  void paintWoodContainer(QVector3D translate = QVector3D{0,0,0}, float scale = 1.0f,
-                          QVector3D lightPos = QVector3D{0.0f,0.0f,0.0f}, QVector3D lightColor = QVector3D{0.0f,0.0f,0.0f} );
-  void paintLight(QVector3D translate = QVector3D{0,0,0}, QVector3D color = QVector3D{1.0f,1.0f,1.0f}, float scale = 1.0f );
+  void initFloor(float width);
+  QOpenGLTexture* loadTexture(const QString& path);
+  void paintScene();
+  void paintWoodContainer( const QVector3D& translate = QVector3D{0,0,0}, float scale = 1.0f,
+                          const QVector3D& lightPos = QVector3D{0.0f,0.0f,0.0f}, const QVector3D& lightColor = QVector3D{0.0f,0.0f,0.0f} );
+  void paintNormalWoodContainer( const QVector3D& translate = QVector3D{0,0,0}, float scale = 1.0f);
+  void paintLight( const QVector3D& translate = QVector3D{0,0,0}, const QVector3D& color = QVector3D{1.0f,1.0f,1.0f}, float scale = 1.0f );
+  void paintFloor( const QVector3D& lightPos, const QVector3D& lightColor );
   void updateParametrs();
 
 private slots:
@@ -67,15 +74,18 @@ private:
   QMatrix4x4 projection_;
   QOpenGLShaderProgram objectShader_;
   QOpenGLShaderProgram lightShader_;
-  QOpenGLTexture* texture_ = nullptr;
+  QOpenGLShaderProgram normalShader_;
+  QOpenGLTexture* tWoodContainer_ = nullptr;
+  QOpenGLTexture* tFloor_ = nullptr;
   QOpenGLBuffer cubeVBO_;
+  QOpenGLBuffer floorVBO_;
   float fow_ = 45.0f;
   float nearPlane_ = 0.1f;
   float farPlane_ = 10.0f;
   bool lamp_ = false;
   Camera camera_;
   QTimer timer_;
-  QVector3D lightPos_{3.0, 1.0, 3.0};
+  QVector3D lightPos_{1.0, 0.0, 1.0};
 };
 
 #endif // OPENGLWIDGET_H
