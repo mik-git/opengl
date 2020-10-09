@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QKeyEvent>
 #include <QtMath>
+#include <QDateTime>
 
 static const float kWIDTH = 1.0f;
 static const QString kWoodContainer = QString(":/textures/woodcontainer.png");
@@ -27,6 +28,8 @@ OpenglWidget::OpenglWidget(QWidget *parent) :
   glFormat.setVersion(3, 3);
   glFormat.setProfile(QSurfaceFormat::CoreProfile);
   QSurfaceFormat::setDefaultFormat(glFormat);
+  QObject::connect(&timer_, SIGNAL(timeout()), SLOT(changeLightPosSlot()));
+  timer_.start(5);
 }
 
 OpenglWidget::~OpenglWidget()
@@ -119,15 +122,15 @@ void OpenglWidget::paintGL()
   qDebug() << "paint";
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  QVector3D lightPos{-3.0, 3.0, 0.0};
+//  QVector3D lightPos{1.0, 3.0, 0.0};
   QVector3D lightColor{1.0, 1.0, 1.0};
 
-  paintLight(lightPos, lightColor, 0.25f);
+  paintLight(lightPos_, lightColor, 0.25f);
 
-  QVector3D containerPos1{0.0, 0.0, 0.0};
-  paintWoodContainer(containerPos1, 1.0f, lightPos, lightColor);
+  QVector3D containerPos1{1.0, 0.0, -3.0};
+  paintWoodContainer(containerPos1, 1.0f, lightPos_, lightColor);
   QVector3D containerPos2{2.0, 0.0, -2.0};
-  paintWoodContainer(containerPos2, 1.0f, lightPos, lightColor);
+  paintWoodContainer(containerPos2, 1.0f, lightPos_, lightColor);
 
 }
 
@@ -320,3 +323,9 @@ void OpenglWidget::updateParametrs()
   update();
 }
 
+void OpenglWidget::changeLightPosSlot()
+{
+  double velocity = 0.0001;
+  lightPos_ = QVector3D{6.0f * float(sin(QDateTime::currentMSecsSinceEpoch()*velocity * M_PI)), 0.0f, float(cos(QDateTime::currentMSecsSinceEpoch()*velocity  * M_PI)) * 6.0f};
+  updateParametrs();
+}

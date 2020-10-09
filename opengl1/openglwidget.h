@@ -6,6 +6,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QOpenGLBuffer>
+#include <QTimer>
 
 #include "camera.h"
 
@@ -57,6 +58,9 @@ private:
   void paintLight(QVector3D translate = QVector3D{0,0,0}, QVector3D color = QVector3D{1.0f,1.0f,1.0f}, float scale = 1.0f );
   void updateParametrs();
 
+private slots:
+  void changeLightPosSlot();
+
 
 private:
   Ui::OpenglWidget *ui_ = nullptr;
@@ -70,6 +74,8 @@ private:
   float farPlane_ = 10.0f;
   bool lamp_ = false;
   Camera camera_;
+  QTimer timer_;
+  QVector3D lightPos_{3.0, 1.0, 3.0};
 };
 
 #endif // OPENGLWIDGET_H
