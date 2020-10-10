@@ -9,5 +9,13 @@
         <file>shaders/vObjectShader.vert</file>
         <file>shaders/vNormalObjectShader.vert</file>
         <file>shaders/gNormalObjectShader.geom</file>
+        <file>textures/cubes/skybox/back.jpg</file>
+        <file>textures/cubes/skybox/bottom.jpg</file>
+        <file>textures/cubes/skybox/front.jpg</file>
+        <file>textures/cubes/skybox/left.jpg</file>
+        <file>textures/cubes/skybox/right.jpg</file>
+        <file>textures/cubes/skybox/top.jpg</file>
+        <file>shaders/fSkyBoxShader.frag</file>
+        <file>shaders/vSkyBoxShader.vert</file>
     </qresource>
 </RCC>

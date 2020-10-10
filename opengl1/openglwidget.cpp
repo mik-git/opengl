@@ -10,6 +10,12 @@ static const float kCubeWidth = 1.0f;
 static const float kFloorWidth = 10.0f;
 static const QString kWoodContainer = QString(":/textures/woodcontainer.png");
 static const QString kWoodFloor = QString(":/textures/wood.png");
+static const QVector<QString> kSkyBoxPaths{":/textures/cubes/skybox/right.jpg",
+                                           ":/textures/cubes/skybox/left.jpg",
+                                           ":/textures/cubes/skybox/top.jpg",
+                                           ":/textures/cubes/skybox/bottom.jpg",
+                                           ":/textures/cubes/skybox/front.jpg",
+                                           ":/textures/cubes/skybox/back.jpg"};
 
 Vertex::Vertex(QVector3D position, QVector2D texturePosition, QVector3D normal) :
   position_(position),
@@ -40,6 +46,7 @@ OpenglWidget::~OpenglWidget()
   delete ui_;
   delete tWoodContainer_;
   delete tFloor_;
+  delete tCubeMap_;
 }
 
 void OpenglWidget::setFow(float fow)
@@ -114,8 +121,10 @@ void OpenglWidget::initScene()
 {
   tWoodContainer_ = loadTexture(kWoodContainer);
   tFloor_ = loadTexture(kWoodFloor);
+  tCubeMap_ = loadCubeMap(kSkyBoxPaths);
   initCube(kCubeWidth);
   initFloor(kFloorWidth);
+  initCubeMap();
 }
 
 void OpenglWidget::resizeGL(int w, int h)
@@ -141,6 +150,7 @@ void OpenglWidget::initShaders()
   initObjectShader();
   initLightShader();
   initNormalShader();
+  initSkyBoxShader();
 }
 
 void OpenglWidget::initObjectShader()
@@ -174,6 +184,25 @@ void OpenglWidget::initLightShader()
     close();
   }
   if (!lightShader_.link()) {
+    qDebug() << "Error link shader program";
+    close();
+  }
+
+}
+
+void OpenglWidget::initSkyBoxShader()
+{
+  if ( skyBoxShader_.isLinked() ) { return;}
+  qDebug() << "init skyBox shader";
+  if (!skyBoxShader_.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vSkyBoxShader.vert")) {
+    qDebug() << "Error vertex shader";
+    close();
+  }
+  if (!skyBoxShader_.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fSkyBoxShader.frag")) {
+    qDebug() << "Error fragment shader";
+    close();
+  }
+  if (!skyBoxShader_.link()) {
     qDebug() << "Error link shader program";
     close();
   }
@@ -277,35 +306,113 @@ void OpenglWidget::initFloor(float width)
   vertexes.append(Vertex(QVector3D( -halfWidth, 0.0f,  halfWidth), QVector2D(0.0f, 0.0f), QVector3D(0.0f,1.0f,0.0f)));
   vertexes.append(Vertex(QVector3D( -halfWidth, 0.0f, -halfWidth), QVector2D(1.0f, 0.0f), QVector3D(0.0f,1.0f,0.0f)));
 
-  qDebug() << floorVBO_.create();
-  qDebug() << floorVBO_.bind();
+  floorVBO_.create();
+  floorVBO_.bind();
   floorVBO_.allocate(vertexes.constData(), vertexes.size() *  sizeof(Vertex));
   floorVBO_.release();
 }
 
+void OpenglWidget::initCubeMap()
+{
+
+  float skyboxVertices[]{
+      // Координаты
+      -1.0f,  1.0f, -1.0f,
+      -1.0f, -1.0f, -1.0f,
+       1.0f, -1.0f, -1.0f,
+       1.0f, -1.0f, -1.0f,
+       1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+
+      -1.0f, -1.0f,  1.0f,
+      -1.0f, -1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f,  1.0f,
+      -1.0f, -1.0f,  1.0f,
+
+       1.0f, -1.0f, -1.0f,
+       1.0f, -1.0f,  1.0f,
+       1.0f,  1.0f,  1.0f,
+       1.0f,  1.0f,  1.0f,
+       1.0f,  1.0f, -1.0f,
+       1.0f, -1.0f, -1.0f,
+
+      -1.0f, -1.0f,  1.0f,
+      -1.0f,  1.0f,  1.0f,
+       1.0f,  1.0f,  1.0f,
+       1.0f,  1.0f,  1.0f,
+       1.0f, -1.0f,  1.0f,
+      -1.0f, -1.0f,  1.0f,
+
+      -1.0f,  1.0f, -1.0f,
+       1.0f,  1.0f, -1.0f,
+       1.0f,  1.0f,  1.0f,
+       1.0f,  1.0f,  1.0f,
+      -1.0f,  1.0f,  1.0f,
+      -1.0f,  1.0f, -1.0f,
+
+      -1.0f, -1.0f, -1.0f,
+      -1.0f, -1.0f,  1.0f,
+       1.0f, -1.0f, -1.0f,
+       1.0f, -1.0f, -1.0f,
+      -1.0f, -1.0f,  1.0f,
+       1.0f, -1.0f,  1.0f
+  };
+  cubeMapVBO_.create();
+  cubeMapVBO_.bind();
+  cubeMapVBO_.allocate(skyboxVertices, sizeof(skyboxVertices));
+  cubeMapVBO_.release();
+}
+
 QOpenGLTexture* OpenglWidget::loadTexture(const QString& path)
 {
-  QOpenGLTexture* texture_ = new QOpenGLTexture(QImage(path).mirrored());
-  texture_->setMinificationFilter(QOpenGLTexture::Nearest);
-  texture_->setMagnificationFilter(QOpenGLTexture::Linear);
-  texture_->setWrapMode(QOpenGLTexture::Repeat);
-  return texture_;
+  QOpenGLTexture* texture = new QOpenGLTexture(QImage(path).mirrored());
+  texture->setMinificationFilter(QOpenGLTexture::Nearest);
+  texture->setMagnificationFilter(QOpenGLTexture::Linear);
+  texture->setWrapMode(QOpenGLTexture::Repeat);
+  return texture;
+}
+
+QOpenGLTexture* OpenglWidget::loadCubeMap(const QVector<QString> &paths)
+{
+  QOpenGLTexture* texture = new QOpenGLTexture( QOpenGLTexture::TargetCubeMap );
+  texture->create();
+  const QImage posx = QImage(paths.first()).convertToFormat(QImage::Format_RGBA8888);
+  texture->setSize(posx.width(), posx.height(), posx.depth());
+  texture->setFormat(QOpenGLTexture::RGBA8_UNorm);
+  texture->allocateStorage();
+  texture->setData(0, 0, QOpenGLTexture::CubeMapPositiveX,
+                   QOpenGLTexture::RGBA, QOpenGLTexture::UInt8,
+                   posx.constBits(), Q_NULLPTR);
+  auto it = paths.begin() + 1;
+  for ( int i = 1; it < paths.end() ; it++, i++  ) {
+    const QImage image = QImage(*it).convertToFormat(QImage::Format_RGBA8888);
+    QOpenGLTexture::CubeMapFace face = QOpenGLTexture::CubeMapFace(QOpenGLTexture::CubeMapPositiveX+i);
+    texture->setData(0, 0, face,  QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, image.constBits(), Q_NULLPTR);
+  }
+
+  texture->setWrapMode(QOpenGLTexture::ClampToEdge);
+  texture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+  texture->setMagnificationFilter(QOpenGLTexture::LinearMipMapLinear);
+  return texture;
 }
 
 void OpenglWidget::paintScene()
 {
+  paintCubeMap();
   //  QVector3D lightPos{1.0, 3.0, 0.0};
-    QVector3D lightColor{1.0, 1.0, 1.0};
+  QVector3D lightColor{1.0, 1.0, 1.0};
 
-    paintLight(lightPos_, lightColor, 0.25f);
+  paintLight(lightPos_, lightColor, 0.25f);
 
-    QVector3D containerPos1{1.0, 0.0, -3.0};
-    paintWoodContainer(containerPos1, 1.0f, lightPos_, lightColor);
-    QVector3D containerPos2{2.0, 0.0, -2.0};
-    paintWoodContainer(containerPos2, 1.0f, lightPos_, lightColor);
-//    paintNormalWoodContainer(containerPos1);
-//    paintNormalWoodContainer(containerPos2);
-    paintFloor(lightPos_,lightColor);
+  QVector3D containerPos1{1.0, 0.0, -3.0};
+  paintWoodContainer(containerPos1, 1.0f, lightPos_, lightColor);
+  QVector3D containerPos2{2.0, 0.0, -2.0};
+  paintWoodContainer(containerPos2, 1.0f, lightPos_, lightColor);
+  //    paintNormalWoodContainer(containerPos1);
+  //    paintNormalWoodContainer(containerPos2);
+  paintFloor(lightPos_,lightColor);
 }
 
 void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale, const QVector3D& lightPos, const QVector3D& lightColor)
@@ -350,7 +457,7 @@ void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale, c
   glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
 }
 
-void OpenglWidget::paintNormalWoodContainer( const QVector3D& position, float scale)
+void OpenglWidget::paintNormalCube( const QVector3D& position, float scale)
 {
   QMatrix4x4 model;
   model.setToIdentity();
@@ -450,6 +557,28 @@ void OpenglWidget::paintFloor(const QVector3D& lightPos, const QVector3D& lightC
   objectShader_.setAttributeBuffer(normalLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
 
   glDrawArrays(GL_TRIANGLES, 0, floorVBO_.size());
+}
+
+void OpenglWidget::paintCubeMap()
+{
+  glDepthMask(GL_FALSE);
+  skyBoxShader_.bind();
+  auto view = camera_.getView();
+  skyBoxShader_.setUniformValue("view", view);
+  skyBoxShader_.setUniformValue("projection", projection_);
+  tCubeMap_->bind(0);
+  skyBoxShader_.setUniformValue("skybox", 0);
+
+  cubeMapVBO_.bind();
+
+  int offset = 0;
+
+  auto vertLoc = skyBoxShader_.attributeLocation("inPos");
+  skyBoxShader_.enableAttributeArray(vertLoc);
+  skyBoxShader_.setAttributeBuffer(vertLoc, GL_FLOAT, offset, 3, sizeof(float)*3);
+
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glDepthMask(GL_TRUE);
 }
 
 void OpenglWidget::updateParametrs()

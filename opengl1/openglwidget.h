@@ -52,17 +52,21 @@ private:
   void initShaders();
   void initObjectShader();
   void initLightShader();
+  void initSkyBoxShader();
   void initNormalShader();
   void initScene();
   void initCube(float width);
   void initFloor(float width);
-  QOpenGLTexture* loadTexture(const QString& path);
+  void initCubeMap();
+  QOpenGLTexture* loadTexture( const QString& path );
+  QOpenGLTexture* loadCubeMap( const QVector<QString>& paths );
   void paintScene();
   void paintWoodContainer( const QVector3D& translate = QVector3D{0,0,0}, float scale = 1.0f,
                           const QVector3D& lightPos = QVector3D{0.0f,0.0f,0.0f}, const QVector3D& lightColor = QVector3D{0.0f,0.0f,0.0f} );
-  void paintNormalWoodContainer( const QVector3D& translate = QVector3D{0,0,0}, float scale = 1.0f);
+  void paintNormalCube( const QVector3D& translate = QVector3D{0,0,0}, float scale = 1.0f);
   void paintLight( const QVector3D& translate = QVector3D{0,0,0}, const QVector3D& color = QVector3D{1.0f,1.0f,1.0f}, float scale = 1.0f );
   void paintFloor( const QVector3D& lightPos, const QVector3D& lightColor );
+  void paintCubeMap();
   void updateParametrs();
 
 private slots:
@@ -75,10 +79,13 @@ private:
   QOpenGLShaderProgram objectShader_;
   QOpenGLShaderProgram lightShader_;
   QOpenGLShaderProgram normalShader_;
+  QOpenGLShaderProgram skyBoxShader_;
   QOpenGLTexture* tWoodContainer_ = nullptr;
   QOpenGLTexture* tFloor_ = nullptr;
+  QOpenGLTexture* tCubeMap_ = nullptr;
   QOpenGLBuffer cubeVBO_;
   QOpenGLBuffer floorVBO_;
+  QOpenGLBuffer cubeMapVBO_;
   float fow_ = 45.0f;
   float nearPlane_ = 0.1f;
   float farPlane_ = 10.0f;
