@@ -17,10 +17,17 @@ static const QVector<QString> kSkyBoxPaths{":/textures/cubes/skybox/right.jpg",
                                            ":/textures/cubes/skybox/front.jpg",
                                            ":/textures/cubes/skybox/back.jpg"};
 
+static QVector<QVector3D> pointLightPositions{
+    QVector3D{  0.7f,  0.2f,  2.0f},
+    QVector3D{  2.3f, -3.3f, -4.0f},
+    QVector3D{ -4.0f,  2.0f, -12.0f},
+    QVector3D{  0.0f,  0.0f, -3.0f}
+};
+
 Vertex::Vertex(QVector3D position, QVector2D texturePosition, QVector3D normal) :
-  position_(position),
-  texturePosition_(texturePosition),
-  normal_(normal)
+  position(position),
+  texturePosition(texturePosition),
+  normal(normal)
 {
 
 }
@@ -129,7 +136,7 @@ void OpenglWidget::initScene()
 
 void OpenglWidget::resizeGL(int w, int h)
 {
-  qDebug() << "resizeGL";
+//  qDebug() << "resizeGL";
   if ( h == 0 ) { h = 1; }
   float aspect = w / float(h);
   projection_.setToIdentity();
@@ -138,7 +145,7 @@ void OpenglWidget::resizeGL(int w, int h)
 
 void OpenglWidget::paintGL()
 {
-  qDebug() << "paint";
+//  qDebug() << "paint";
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   paintScene();
@@ -402,9 +409,12 @@ void OpenglWidget::paintScene()
 {
   paintCubeMap();
   //  QVector3D lightPos{1.0, 3.0, 0.0};
+  setLightObjectShader();
   QVector3D lightColor{1.0, 1.0, 1.0};
-
-  paintLight(lightPos_, lightColor, 0.25f);
+  pointLightPositions[0] = lightPos_;
+  for ( auto& pos : pointLightPositions  ) {
+    paintLight(pos, lightColor, 0.25f);
+  }
 
   QVector3D containerPos1{1.0, 0.0, -3.0};
   paintWoodContainer(containerPos1, 1.0f, lightPos_, lightColor);
@@ -428,9 +438,9 @@ void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale, c
   objectShader_.setUniformValue("model", model);
   objectShader_.setUniformValue("view", view);
   objectShader_.setUniformValue("projection", projection_);
-  objectShader_.setUniformValue("lightPos", lightPos);
-  objectShader_.setUniformValue("lightColor", lightColor);
-  objectShader_.setUniformValue("viewPos", camera_.cameraPosition());
+//  objectShader_.setUniformValue("lightPos", lightPos);
+//  objectShader_.setUniformValue("lightColor", lightColor);
+  objectShader_.setUniformValue("viewPos", camera_.position());
   tWoodContainer_->bind(0);
   objectShader_.setUniformValue("texture0", 0);
 
@@ -494,6 +504,45 @@ void OpenglWidget::paintNormalCube( const QVector3D& position, float scale)
   glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
 }
 
+void OpenglWidget::setLightObjectShader()
+{
+  objectShader_.bind();
+
+
+  objectShader_.setUniformValue("lightDir.direction", -0.2f, -1.0f, -0.3f);
+  objectShader_.setUniformValue("lightDir.ambient", 0.05f, 0.05f, 0.05f);
+  objectShader_.setUniformValue("lightDir.diffuse", 0.4f, 0.4f, 0.4f);
+  objectShader_.setUniformValue("lightDir.specular", 0.5f, 0.5f, 0.5f);
+  for ( int i = 0; i < 4; i++) {
+    QString name = QString("pointLights[%1].%2").arg(i);
+    objectShader_.setUniformValue( QString(name).arg("position") .toStdString().c_str(), pointLightPositions[i]);
+    objectShader_.setUniformValue( QString(name).arg("ambient")  .toStdString().c_str(), 0.05f, 0.05f, 0.05f);
+    objectShader_.setUniformValue( QString(name).arg("diffuse")  .toStdString().c_str(), 0.8f, 0.8f, 0.8f);
+    objectShader_.setUniformValue( QString(name).arg("specular") .toStdString().c_str(), 1.0f, 1.0f, 1.0f);
+    objectShader_.setUniformValue( QString(name).arg("constant") .toStdString().c_str(), 1.0f);
+    objectShader_.setUniformValue( QString(name).arg("linear")   .toStdString().c_str(), 0.09f);
+    objectShader_.setUniformValue( QString(name).arg("quadratic").toStdString().c_str(), 0.032f);
+
+  }
+  // lamp
+  objectShader_.setUniformValue("lamp.position", camera_.position());
+  objectShader_.setUniformValue("lamp.direction", camera_.front());
+  objectShader_.setUniformValue("lamp.ambient", 0.0f, 0.0f, 0.0f);
+  if ( lamp_ ) {
+    objectShader_.setUniformValue("lamp.diffuse", 1.0f, 1.0f, 1.0f);
+    objectShader_.setUniformValue("lamp.specular", 1.0f, 1.0f, 1.0f);
+  }
+  else {
+    objectShader_.setUniformValue("lamp.diffuse", 0.0f, 0.0f, 0.0f);
+    objectShader_.setUniformValue("lamp.specular", 0.0f, 0.0f, 0.0f);
+  }
+  objectShader_.setUniformValue("lamp.constant", 1.0f);
+  objectShader_.setUniformValue("lamp.linear", 0.09f);
+  objectShader_.setUniformValue("lamp.quadratic", 0.032f);
+  objectShader_.setUniformValue("lamp.cutOff", float(cos( qDegreesToRadians( 12.5 ) )));
+  objectShader_.setUniformValue("lamp.outerCutOff", float(cos( qDegreesToRadians( 15.0 ) )));
+}
+
 void OpenglWidget::paintLight(const QVector3D& position, const QVector3D& color, float scale)
 {
   QMatrix4x4 model;
@@ -530,9 +579,9 @@ void OpenglWidget::paintFloor(const QVector3D& lightPos, const QVector3D& lightC
   objectShader_.setUniformValue("model", model);
   objectShader_.setUniformValue("view", view);
   objectShader_.setUniformValue("projection", projection_);
-  objectShader_.setUniformValue("lightPos", lightPos);
-  objectShader_.setUniformValue("lightColor", lightColor);
-  objectShader_.setUniformValue("viewPos", camera_.cameraPosition());
+//  objectShader_.setUniformValue("lightPos", lightPos);
+//  objectShader_.setUniformValue("lightColor", lightColor);
+  objectShader_.setUniformValue("viewPos", camera_.position());
   tFloor_->bind(1);
   objectShader_.setUniformValue("texture0", 1);
 

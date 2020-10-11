@@ -15,10 +15,43 @@ struct Vertex
   Vertex(){}
   Vertex( QVector3D position, QVector2D texturePosition, QVector3D normal );
 
-  QVector3D position_;
-  QVector2D texturePosition_;
-  QVector3D normal_;
+  QVector3D position;
+  QVector2D texturePosition;
+  QVector3D normal;
 };
+
+//struct LightDirect {
+//    QVector3D direction;
+//    QVector3D ambient;
+//    QVector3D diffuse;
+//    QVector3D specular;
+//};
+
+//struct LightPos {
+//    QVector3D position;
+
+//    QVector3D ambient;
+//    QVector3D diffuse;
+//    QVector3D specular;
+
+//    float constant;
+//    float linear;
+//    float quadratic;
+//};
+
+//struct Lamp {
+//    QVector3D position;
+//    QVector3D direction;
+//    float cutOff;
+//    float outerCutOff;
+//    QVector3D ambient;
+//    QVector3D diffuse;
+//    QVector3D specular;
+
+//    float constant;
+//    float linear;
+//    float quadratic;
+//};
 
 namespace Ui {
 class OpenglWidget;
@@ -64,6 +97,7 @@ private:
   void paintWoodContainer( const QVector3D& translate = QVector3D{0,0,0}, float scale = 1.0f,
                           const QVector3D& lightPos = QVector3D{0.0f,0.0f,0.0f}, const QVector3D& lightColor = QVector3D{0.0f,0.0f,0.0f} );
   void paintNormalCube( const QVector3D& translate = QVector3D{0,0,0}, float scale = 1.0f);
+  void setLightObjectShader();
   void paintLight( const QVector3D& translate = QVector3D{0,0,0}, const QVector3D& color = QVector3D{1.0f,1.0f,1.0f}, float scale = 1.0f );
   void paintFloor( const QVector3D& lightPos, const QVector3D& lightColor );
   void paintCubeMap();
