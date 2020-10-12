@@ -24,9 +24,11 @@ protected:
 
 private slots:
   void changeVisibleSettingsSlot();
-  void sendFowSlot(double fow);
-  void sendNearPlaneSlot(double nearPlane);
-  void sendFarPlaneSlot(double farPlane);
+  void setFowSlot(double fow);
+  void setNearPlaneSlot(double nearPlane);
+  void setFarPlaneSlot(double farPlane);
+  void setLightParamSlot();
+  void showColorDialogSlot();
 
 private:
   void initValue();
@@ -35,6 +37,7 @@ private:
   Ui::MainWidget *ui_ = nullptr;
   OpenglWidget* opengl_ = nullptr;
   QPointF prevPos_;
+  QColor color_{Qt::black};
 };
 
 #endif // MAINWIDGET_H

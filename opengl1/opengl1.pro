@@ -13,12 +13,14 @@ SOURCES += \
         main.cpp \
         openglwidget.cpp \
         mainwidget.cpp \
-        camera.cpp
+        camera.cpp \
+    structs.cpp
 
 HEADERS += \
         openglwidget.h \
         mainwidget.h \
-        camera.h
+        camera.h \
+    structs.h
 
 FORMS += \
         openglwidget.ui \
