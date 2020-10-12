@@ -105,7 +105,6 @@ void OpenglWidget::rotateCamera(const QPoint& diff)
 void OpenglWidget::switchLamp()
 {
   lamp_ = !lamp_;
-  setLightObjectShader();
   updateParametrs();
 }
 
@@ -117,7 +116,6 @@ void OpenglWidget::setLightColor(int i, QVector3D color)
     pointLights_[i].specular = color*0.01f;
 
   }
-  setLightObjectShader();
   updateParametrs();
 }
 
@@ -126,7 +124,6 @@ void OpenglWidget::setLightPosition(int i, QVector3D position)
   if ( i > 0 && i < kPosLightCount) {
     pointLights_[i].position = position;
   }
-  setLightObjectShader();
   updateParametrs();
 }
 
@@ -193,7 +190,6 @@ void OpenglWidget::initObjectShader()
     qDebug() << "Error link shader program";
     close();
   }
-  setLightObjectShader();
 }
 
 void OpenglWidget::initLightShader()
@@ -452,8 +448,6 @@ void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale)
   objectShader_.setUniformValue("model", model);
   objectShader_.setUniformValue("view", view);
   objectShader_.setUniformValue("projection", projection_);
-//  objectShader_.setUniformValue("lightPos", lightPos);
-//  objectShader_.setUniformValue("lightColor", lightColor);
   objectShader_.setUniformValue("viewPos", camera_.position());
   tWoodContainer_->bind(0);
   objectShader_.setUniformValue("texture0", 0);
@@ -645,6 +639,7 @@ void OpenglWidget::updateParametrs()
 {
   auto rect = geometry();
   resizeGL(rect.width(), rect.height());
+  setLightObjectShader();
   update();
 }
 
