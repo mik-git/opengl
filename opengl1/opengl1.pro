@@ -14,13 +14,19 @@ SOURCES += \
         openglwidget.cpp \
         mainwidget.cpp \
         camera.cpp \
-    structs.cpp
+        structs.cpp \
+        oglobject.cpp \
+    mesh.cpp \
+    material.cpp
 
 HEADERS += \
         openglwidget.h \
         mainwidget.h \
         camera.h \
-    structs.h
+        structs.h \
+        oglobject.h \
+    mesh.h \
+    material.h
 
 FORMS += \
         openglwidget.ui \

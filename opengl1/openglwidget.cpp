@@ -17,6 +17,7 @@ static const QVector<QString> kSkyBoxPaths{":/textures/cubes/skybox/right.jpg",
                                            ":/textures/cubes/skybox/front.jpg",
                                            ":/textures/cubes/skybox/back.jpg"};
 static const int kPosLightCount = 4;
+
 static QVector<QVector3D> pointLightPositions{
     QVector3D{  1.0f,  0.0f,  1.0f },
     QVector3D{  2.3f,  3.3f, 4.0f},
@@ -38,8 +39,9 @@ OpenglWidget::OpenglWidget(QWidget *parent) :
   glFormat.setVersion(3, 3);
   glFormat.setProfile(QSurfaceFormat::CoreProfile);
   QSurfaceFormat::setDefaultFormat(glFormat);
-  QObject::connect(&timer_, SIGNAL(timeout()), SLOT(changeLightPosSlot()));
-  timer_.start(5);
+  //QObject::connect(&timer_, SIGNAL(timeout()), SLOT(changeLightPosSlot()));
+  startTimer(10);
+  //timer_.start(5);
 }
 
 OpenglWidget::~OpenglWidget()
@@ -49,6 +51,7 @@ OpenglWidget::~OpenglWidget()
   delete tWoodContainer_;
   delete tFloor_;
   delete tCubeMap_;
+  delete customObject_;
 }
 
 void OpenglWidget::setFow(float fow)
@@ -112,9 +115,8 @@ void OpenglWidget::setLightColor(int i, QVector3D color)
 {
   if ( i >= 0 && i < kPosLightCount) {
     pointLights_[i].ambient = color*0.05f;
-    pointLights_[i].diffuse = color*0.8f;
+    pointLights_[i].diffuse = color*1.0f;
     pointLights_[i].specular = color*0.01f;
-
   }
   updateParametrs();
 }
@@ -130,7 +132,7 @@ void OpenglWidget::setLightPosition(int i, QVector3D position)
 void OpenglWidget::initializeGL()
 {
   qDebug() << "initGL";
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
   glEnable(GL_DEPTH_TEST);
   //glEnable(GL_CULL_FACE);
 
@@ -146,6 +148,7 @@ void OpenglWidget::initScene()
   initCube(kCubeWidth);
   initFloor(kFloorWidth);
   initCubeMap();
+  initCustomObject();
 }
 
 void OpenglWidget::resizeGL(int w, int h)
@@ -161,9 +164,13 @@ void OpenglWidget::paintGL()
 {
 //  qDebug() << "paint";
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   paintScene();
+}
 
+void OpenglWidget::timerEvent(QTimerEvent* event)
+{
+  Q_UNUSED(event);
+  changeLightPosSlot();
 }
 
 void OpenglWidget::initShaders()
@@ -172,6 +179,7 @@ void OpenglWidget::initShaders()
   initLightShader();
   initNormalShader();
   initSkyBoxShader();
+  initCustomObjectShader();
 }
 
 void OpenglWidget::initObjectShader()
@@ -250,7 +258,24 @@ void OpenglWidget::initNormalShader()
     qDebug() << "Error link shader program";
     close();
   }
+}
 
+void OpenglWidget::initCustomObjectShader()
+{
+  if ( customObjectShader_.isLinked() ) { return;}
+  qDebug() << "init customObject shader";
+  if (!customObjectShader_.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vCustomObjectShader.vert")) {
+    qDebug() << "Error vertex shader";
+    close();
+  }
+  if (!customObjectShader_.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fCustomObjectShader.frag")) {
+    qDebug() << "Error fragment shader";
+    close();
+  }
+  if (!customObjectShader_.link()) {
+    qDebug() << "Error link shader program";
+    close();
+  }
 }
 
 void OpenglWidget::initCube(float width)
@@ -386,6 +411,11 @@ void OpenglWidget::initCubeMap()
   cubeMapVBO_.release();
 }
 
+void OpenglWidget::initCustomObject()
+{
+  customObject_ = new OGLObject{QString("/home/mikhail/build_dir/opengl/backpack/backpack.obj")};
+}
+
 QOpenGLTexture* OpenglWidget::loadTexture(const QString& path)
 {
   QOpenGLTexture* texture = new QOpenGLTexture(QImage(path).mirrored());
@@ -421,18 +451,18 @@ QOpenGLTexture* OpenglWidget::loadCubeMap(const QVector<QString> &paths)
 
 void OpenglWidget::paintScene()
 {
-  paintCubeMap();
+//  paintCubeMap();
   for ( auto& light : pointLights_  ) {
     paintLight(light.position, light.diffuse, 0.25f);
   }
-
-  QVector3D containerPos1{1.0, 0.0, -3.0};
-  paintWoodContainer(containerPos1, 1.0f );
-  QVector3D containerPos2{2.0, 0.0, -2.0};
-  paintWoodContainer(containerPos2, 1.0f );
+  paintCustomObject();
+//  QVector3D containerPos1{1.0, 0.0, -3.0};
+//  paintWoodContainer(containerPos1, 1.0f );
+//  QVector3D containerPos2{2.0, 0.0, -2.0};
+//  paintWoodContainer(containerPos2, 1.0f );
   //    paintNormalWoodContainer(containerPos1);
   //    paintNormalWoodContainer(containerPos2);
-  paintFloor();
+//  paintFloor();
 }
 
 void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale)
@@ -512,42 +542,42 @@ void OpenglWidget::paintNormalCube( const QVector3D& position, float scale)
   glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
 }
 
-void OpenglWidget::setLightObjectShader()
+void OpenglWidget::setLightShader(QOpenGLShaderProgram& shader)
 {
-  objectShader_.bind();
-
-  objectShader_.setUniformValue("lightDir.direction", 0.55f, -1.0f, 1.0f);
-  objectShader_.setUniformValue("lightDir.ambient", 0.05f, 0.05f, 0.05f);
-  objectShader_.setUniformValue("lightDir.diffuse", 0.4f, 0.4f, 0.4f);
-  objectShader_.setUniformValue("lightDir.specular", 0.5f, 0.5f, 0.5f);
+  if (!shader.isLinked()) {return;}
+  shader.bind();
+  shader.setUniformValue("lightDir.direction", 0.55f, -1.0f, 1.0f);
+  shader.setUniformValue("lightDir.ambient", 0.05f, 0.05f, 0.05f);
+  shader.setUniformValue("lightDir.diffuse", 0.4f, 0.4f, 0.4f);
+  shader.setUniformValue("lightDir.specular", 0.5f, 0.5f, 0.5f);
   for ( int i = 0; i < kPosLightCount; i++) {
     QString name = QString("pointLights[%1].%2").arg(i);
-    objectShader_.setUniformValue( QString(name).arg("position") .toStdString().c_str(), pointLights_[i].position);
-    objectShader_.setUniformValue( QString(name).arg("ambient")  .toStdString().c_str(), pointLights_[i].ambient);
-    objectShader_.setUniformValue( QString(name).arg("diffuse")  .toStdString().c_str(), pointLights_[i].diffuse);
-    objectShader_.setUniformValue( QString(name).arg("specular") .toStdString().c_str(), pointLights_[i].specular);
-    objectShader_.setUniformValue( QString(name).arg("constant") .toStdString().c_str(), pointLights_[i].constant);
-    objectShader_.setUniformValue( QString(name).arg("linear")   .toStdString().c_str(), pointLights_[i].linear);
-    objectShader_.setUniformValue( QString(name).arg("quadratic").toStdString().c_str(), pointLights_[i].quadratic);
+    shader.setUniformValue( QString(name).arg("position") .toStdString().c_str(), pointLights_[i].position);
+    shader.setUniformValue( QString(name).arg("ambient")  .toStdString().c_str(), pointLights_[i].ambient);
+    shader.setUniformValue( QString(name).arg("diffuse")  .toStdString().c_str(), pointLights_[i].diffuse);
+    shader.setUniformValue( QString(name).arg("specular") .toStdString().c_str(), pointLights_[i].specular);
+    shader.setUniformValue( QString(name).arg("constant") .toStdString().c_str(), pointLights_[i].constant);
+    shader.setUniformValue( QString(name).arg("linear")   .toStdString().c_str(), pointLights_[i].linear);
+    shader.setUniformValue( QString(name).arg("quadratic").toStdString().c_str(), pointLights_[i].quadratic);
 
   }
   // lamp
-  objectShader_.setUniformValue("lamp.position", camera_.position());
-  objectShader_.setUniformValue("lamp.direction", camera_.front());
-  objectShader_.setUniformValue("lamp.ambient", 0.0f, 0.0f, 0.0f);
+  shader.setUniformValue("lamp.position", camera_.position());
+  shader.setUniformValue("lamp.direction", camera_.front());
+  shader.setUniformValue("lamp.ambient", 0.0f, 0.0f, 0.0f);
   if ( lamp_ ) {
-    objectShader_.setUniformValue("lamp.diffuse", 1.0f, 1.0f, 1.0f);
-    objectShader_.setUniformValue("lamp.specular", 1.0f, 1.0f, 1.0f);
+    shader.setUniformValue("lamp.diffuse", 1.0f, 1.0f, 1.0f);
+    shader.setUniformValue("lamp.specular", 1.0f, 1.0f, 1.0f);
   }
   else {
-    objectShader_.setUniformValue("lamp.diffuse", 0.0f, 0.0f, 0.0f);
-    objectShader_.setUniformValue("lamp.specular", 0.0f, 0.0f, 0.0f);
+    shader.setUniformValue("lamp.diffuse", 0.0f, 0.0f, 0.0f);
+    shader.setUniformValue("lamp.specular", 0.0f, 0.0f, 0.0f);
   }
-  objectShader_.setUniformValue("lamp.constant", 1.0f);
-  objectShader_.setUniformValue("lamp.linear", 0.09f);
-  objectShader_.setUniformValue("lamp.quadratic", 0.032f);
-  objectShader_.setUniformValue("lamp.cutOff", float(cos( qDegreesToRadians( 12.5 ) )));
-  objectShader_.setUniformValue("lamp.outerCutOff", float(cos( qDegreesToRadians( 15.0 ) )));
+  shader.setUniformValue("lamp.constant", 1.0f);
+  shader.setUniformValue("lamp.linear", 0.09f);
+  shader.setUniformValue("lamp.quadratic", 0.032f);
+  shader.setUniformValue("lamp.cutOff", float(cos( qDegreesToRadians( 12.5 ) )));
+  shader.setUniformValue("lamp.outerCutOff", float(cos( qDegreesToRadians( 15.0 ) )));
 }
 
 void OpenglWidget::paintLight(const QVector3D& position, const QVector3D& color, float scale)
@@ -635,11 +665,29 @@ void OpenglWidget::paintCubeMap()
   glDepthMask(GL_TRUE);
 }
 
+void OpenglWidget::paintCustomObject()
+{
+  QMatrix4x4 model;
+  model.setToIdentity();
+  model.rotate(rotate_);
+//  model.translate(QVector3D{0.0f, float(-kCubeWidth/2), 0.0f});
+  customObjectShader_.bind();
+  auto view = camera_.getView();
+
+  customObjectShader_.setUniformValue("model", model);
+  customObjectShader_.setUniformValue("view", view);
+  customObjectShader_.setUniformValue("projection", projection_);
+
+  customObject_->draw(customObjectShader_);
+
+}
+
 void OpenglWidget::updateParametrs()
 {
   auto rect = geometry();
   resizeGL(rect.width(), rect.height());
-  setLightObjectShader();
+  setLightShader(objectShader_);
+  setLightShader(customObjectShader_);
   update();
 }
 
@@ -649,6 +697,8 @@ void OpenglWidget::changeLightPosSlot()
   pointLights_[0].position = QVector3D{6.0f * float(sin(QDateTime::currentMSecsSinceEpoch()*velocity * M_PI)), 2.0f, float(cos(QDateTime::currentMSecsSinceEpoch()*velocity  * M_PI)) * 6.0f};
   QString name = QString("pointLights[%1].%2").arg(0);
   objectShader_.setUniformValue( QString(name).arg("position") .toStdString().c_str(), pointLights_[0].position);
+  angle_++;
+  rotate_ = QQuaternion::fromAxisAndAngle(QVector3D{1.0,1.0,0.0}, angle_);
   updateParametrs();
 }
 

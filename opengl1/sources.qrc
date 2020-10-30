@@ -17,5 +17,7 @@
         <file>textures/cubes/skybox/top.jpg</file>
         <file>shaders/fSkyBoxShader.frag</file>
         <file>shaders/vSkyBoxShader.vert</file>
+        <file>shaders/fCustomObjectShader.frag</file>
+        <file>shaders/vCustomObjectShader.vert</file>
     </qresource>
 </RCC>

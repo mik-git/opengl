@@ -129,6 +129,7 @@ void MainWidget::setLightParamSlot()
   float red = float(color_.redF());
   float green = float(color_.greenF());
   float blue = float(color_.blueF());
+  qDebug() << QString(" red %1 green %2 blue %3 ").arg(red).arg(green).arg(blue);
   opengl_->setLightColor(ui_->lightNumberBox->currentIndex(), QVector3D{red,green, blue});
   auto x = float(ui_->xSpinBox->value());
   auto y = float(ui_->ySpinBox->value());
