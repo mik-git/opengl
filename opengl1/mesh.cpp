@@ -32,7 +32,7 @@ void Mesh::draw(QOpenGLShaderProgram& shader)
     else {
       shader.setUniformValue("useNormalMap",false);
     }
-    if ( material_->hasTextureMetallic() ){
+    if ( material_->hasTextureMetallic()){
       material_->textureMetallic()->bind(2);
       shader.setUniformValue("metallic0",2);
       shader.setUniformValue("useMetallicMap",true);

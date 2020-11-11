@@ -131,6 +131,7 @@ void OpenglWidget::setPaintCustomObject(bool flag)
 
 void OpenglWidget::setLightColor(int i, QVector3D color)
 {
+//  color *= 300.0f;
   if ( i >= 0 && i < kPosLightCount) {
     pointLights_[i].ambient = color*0.05f;
     pointLights_[i].diffuse = color*1.0f;

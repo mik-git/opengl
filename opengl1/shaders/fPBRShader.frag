@@ -111,6 +111,7 @@ void main(void)
   else {
     metallic = material.metallic;
   }
+  metallic = 1.0 - metallic;
   float roughness;
   if (useRoughnessMap) {
    roughness = texture2D(roughness0, texCoord).r;
