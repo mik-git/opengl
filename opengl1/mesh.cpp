@@ -16,12 +16,49 @@ void Mesh::draw(QOpenGLShaderProgram& shader)
       return;
     }
     shader.bind();
-    // TODO set uniform
-    // TODO set textre
-    material_->textureAlbedo()->bind(0);
-    shader.setUniformValue("albedo0",0);
-    material_->textureNormal()->bind(1);
-    shader.setUniformValue("naormal0",1);
+    if ( material_->hasTextureAlbedo() ) {
+      material_->textureAlbedo()->bind(0);
+      shader.setUniformValue("albedo0",0);
+      shader.setUniformValue("useAlbedoMap",true);
+    }
+    else {
+      shader.setUniformValue("useAlbedoMap", false);
+    }
+    if ( material_->hasTextureNormal() ) {
+      material_->textureNormal()->bind(1);
+      shader.setUniformValue("normal0",1);
+      shader.setUniformValue("useNormalMap",true);
+    }
+    else {
+      shader.setUniformValue("useNormalMap",false);
+    }
+    if ( material_->hasTextureMetallic() ){
+      material_->textureMetallic()->bind(2);
+      shader.setUniformValue("metallic0",2);
+      shader.setUniformValue("useMetallicMap",true);
+    }
+    else {
+      shader.setUniformValue("material.metallic", material_->metallic() );
+      shader.setUniformValue("useMetallicMap",false);
+    }
+    if( material_->hasTextureRoughness() ) {
+      material_->textureRoughness()->bind(3);
+      shader.setUniformValue("roughness0",3);
+      shader.setUniformValue("useRoughnessMap",true);
+    }
+    else {
+      shader.setUniformValue("material.roughness", material_->roughness() );
+      shader.setUniformValue("useRoughnessMap",false);
+    }
+    if ( material_->hasTextureAmbientOcclusion() ) {
+      material_->textureAmbientOcclusion()->bind(4);
+      shader.setUniformValue("ao0",4);
+      shader.setUniformValue("useAOMap",true);
+    }
+    else {
+      shader.setUniformValue("material.ao", material_->ao() );
+      shader.setUniformValue("useAOMap",false);
+    }
     shader.setUniformValue("material.specularExponent", material_->specularColor() );
     shader.setUniformValue("material.ambientColor", material_->ambientColor() );
     shader.setUniformValue("material.diffuseColor", material_->diffuseColor() );
@@ -100,7 +137,7 @@ void Mesh::clear()
 
 void Mesh::calculateTBN(QVector<Vertex>& vertexes)
 {
-  qDebug() << "CalcTbn";
+//  qDebug() << "CalcTbn";
   if ( vertexes.size()%3 != 0 ) {
     qDebug() << QString("size vertexes %1").arg(vertexes.size());
     return;
@@ -121,8 +158,16 @@ void Mesh::calculateTBN(QVector<Vertex>& vertexes)
     QVector2D deltaUV2{uv3 - uv1};
 
     float r = 1.0f/( deltaUV1.x() * deltaUV2.y() - deltaUV1.y() * deltaUV2.x() );
-    QVector3D tangent{ (deltaPos1 * deltaUV2.y() - deltaPos2 * deltaUV1.y()) * r };
-    QVector3D bitangent{ (deltaPos2 * deltaUV1.x() - deltaPos1 * deltaUV2.x()) * r };
+//    QVector3D tangent{ (deltaPos1 * deltaUV2.y() - deltaPos2 * deltaUV1.y()) * r };
+//    QVector3D bitangent{ (deltaPos2 * deltaUV1.x() - deltaPos1 * deltaUV2.x()) * r };
+    QVector3D tangent;
+    tangent.setX((deltaUV2.y() * deltaPos1.x() - deltaUV1.y() * deltaPos2.x()) * r);
+    tangent.setY((deltaUV2.y() * deltaPos1.y() - deltaUV1.y() * deltaPos2.y()) * r);
+    tangent.setZ((deltaUV2.y() * deltaPos1.z() - deltaUV1.y() * deltaPos2.z()) * r);
+    QVector3D bitangent;
+    bitangent.setX((-deltaUV2.y() * deltaPos1.x() + deltaUV1.y() * deltaPos2.x()) * r);
+    bitangent.setY((-deltaUV2.y() * deltaPos1.y() + deltaUV1.y() * deltaPos2.y()) * r);
+    bitangent.setZ((-deltaUV2.y() * deltaPos1.z() + deltaUV1.y() * deltaPos2.z()) * r);
 
     vertexes[i].tangent = tangent;
     vertexes[i+1].tangent = tangent;

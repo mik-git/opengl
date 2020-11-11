@@ -29,9 +29,15 @@ private slots:
   void setFarPlaneSlot(double farPlane);
   void setLightParamSlot();
   void showColorDialogSlot();
+  void setRotateFlagSlot(int flag);
+  void setPaintCubeMapSlot(int flag);
+  void setPaintCubesSlot(int flag);
+  void setPaintCustomObjectSlot(int flag);
+  void chooseCustomObjectFileSlot();
 
 private:
   void initValue();
+  void setCustomObjectPath(QString path);
 
 private:
   Ui::MainWidget *ui_ = nullptr;

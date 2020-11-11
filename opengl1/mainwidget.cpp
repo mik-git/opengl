@@ -6,6 +6,7 @@
 #include <QWheelEvent>
 #include <QColorDialog>
 #include <QDebug>
+#include <QFileDialog>
 
 static const double kSensitivity = 0.05;
 
@@ -26,6 +27,11 @@ MainWidget::MainWidget(QWidget *parent) :
   QObject::connect(ui_->farPlaneSpinBox, SIGNAL(valueChanged(double)), SLOT(setFarPlaneSlot(double)));
   QObject::connect(ui_->setButton, SIGNAL(clicked()), SLOT(setLightParamSlot()));
   QObject::connect(ui_->colorButton, SIGNAL(clicked()), SLOT(showColorDialogSlot()) );
+  QObject::connect(ui_->plainSceneCheckBox, SIGNAL(stateChanged(int)), SLOT(setPaintCubesSlot(int)) );
+  QObject::connect(ui_->rotateCheckBox, SIGNAL(stateChanged(int)), SLOT(setRotateFlagSlot(int)));
+  QObject::connect(ui_->cubeMapCheckBox,SIGNAL(stateChanged(int)), SLOT(setPaintCubeMapSlot(int)));
+  QObject::connect(ui_->customObjectCheckBox, SIGNAL(stateChanged(int)), SLOT(setPaintCustomObjectSlot(int)));
+  QObject::connect(ui_->fileButton, SIGNAL(clicked()), SLOT(chooseCustomObjectFileSlot()));
   initValue();
 }
 
@@ -58,11 +64,11 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
       opengl_->switchLamp();
       break;
     }
-//    case ( Qt::Key::Key_Escape ): //TODO question for escape
-//    {
-//      close();
-//      break;
-//    }
+    case ( Qt::Key::Key_Escape ): //TODO question for escape
+    {
+      close();
+      break;
+    }
   }
   QWidget::keyPressEvent(event);
 }
@@ -129,7 +135,6 @@ void MainWidget::setLightParamSlot()
   float red = float(color_.redF());
   float green = float(color_.greenF());
   float blue = float(color_.blueF());
-  qDebug() << QString(" red %1 green %2 blue %3 ").arg(red).arg(green).arg(blue);
   opengl_->setLightColor(ui_->lightNumberBox->currentIndex(), QVector3D{red,green, blue});
   auto x = float(ui_->xSpinBox->value());
   auto y = float(ui_->ySpinBox->value());
@@ -151,9 +156,46 @@ void MainWidget::showColorDialogSlot()
   dialog->deleteLater();
 }
 
+void MainWidget::setRotateFlagSlot(int flag)
+{
+  opengl_->setRotate(bool(flag));
+}
+
+void MainWidget::setPaintCubeMapSlot(int flag)
+{
+  opengl_->setPaintCubeMap(bool(flag));
+}
+
+void MainWidget::setPaintCubesSlot(int flag)
+{
+  opengl_->setPaintCubes(bool(flag));
+}
+
+void MainWidget::setPaintCustomObjectSlot(int flag)
+{
+  opengl_->setPaintCustomObject(bool(flag));
+}
+
+void MainWidget::chooseCustomObjectFileSlot()
+{
+  auto fileName = QFileDialog::getOpenFileName(this, tr("Open Obj File"), QDir::homePath(), tr("Object Files (*.obj)"));
+  qDebug() << "filename " <<  fileName;
+  if (!fileName.isEmpty()) {
+    setCustomObjectPath(fileName);
+  }
+}
+
+void MainWidget::setCustomObjectPath(QString path)
+{
+  ui_->filePath->setText(path);
+  opengl_->initCustomObject(path);
+}
+
 void MainWidget::initValue()
 {
   ui_->fowSpinBox->setValue(45.0);
   ui_->nearPlaneSpinBox->setValue(0.1);
   ui_->farPlaneSpinBox->setValue(100.0);
+  ui_->cubeMapCheckBox->setChecked(true);
+  ui_->plainSceneCheckBox->setChecked(true);
 }

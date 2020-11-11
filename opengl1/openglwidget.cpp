@@ -39,9 +39,7 @@ OpenglWidget::OpenglWidget(QWidget *parent) :
   glFormat.setVersion(3, 3);
   glFormat.setProfile(QSurfaceFormat::CoreProfile);
   QSurfaceFormat::setDefaultFormat(glFormat);
-  //QObject::connect(&timer_, SIGNAL(timeout()), SLOT(changeLightPosSlot()));
-  startTimer(10);
-  //timer_.start(5);
+  startTimer(5);
 }
 
 OpenglWidget::~OpenglWidget()
@@ -111,6 +109,26 @@ void OpenglWidget::switchLamp()
   updateParametrs();
 }
 
+void OpenglWidget::setRotate(bool flag)
+{
+  rotateFlag_ = flag;
+}
+
+void OpenglWidget::setPaintCubeMap(bool flag)
+{
+  paintCubeMap_ = flag;
+}
+
+void OpenglWidget::setPaintCubes(bool flag)
+{
+  paintCubes_ = flag;
+}
+
+void OpenglWidget::setPaintCustomObject(bool flag)
+{
+  paintCustomObject_ = flag;
+}
+
 void OpenglWidget::setLightColor(int i, QVector3D color)
 {
   if ( i >= 0 && i < kPosLightCount) {
@@ -134,7 +152,7 @@ void OpenglWidget::initializeGL()
   qDebug() << "initGL";
   glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
   glEnable(GL_DEPTH_TEST);
-  //glEnable(GL_CULL_FACE);
+  glEnable(GL_CULL_FACE);
 
   initScene();
   initShaders();
@@ -148,7 +166,8 @@ void OpenglWidget::initScene()
   initCube(kCubeWidth);
   initFloor(kFloorWidth);
   initCubeMap();
-  initCustomObject();
+//  auto path = QString("/home/mikhail/build_dir/opengl/backpack/backpack.obj");
+//  initCustomObject(path);
 }
 
 void OpenglWidget::resizeGL(int w, int h)
@@ -180,6 +199,7 @@ void OpenglWidget::initShaders()
   initNormalShader();
   initSkyBoxShader();
   initCustomObjectShader();
+  initPBRShader();
 }
 
 void OpenglWidget::initObjectShader()
@@ -278,6 +298,24 @@ void OpenglWidget::initCustomObjectShader()
   }
 }
 
+void OpenglWidget::initPBRShader()
+{
+  if ( PBRShader_.isLinked() ) { return;}
+  qDebug() << "init PBR shader";
+  if (!PBRShader_.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vPBRShader.vert")) {
+    qDebug() << "Error vertex shader";
+    close();
+  }
+  if (!PBRShader_.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fPBRShader.frag")) {
+    qDebug() << "Error fragment shader";
+    close();
+  }
+  if (!PBRShader_.link()) {
+    qDebug() << "Error link shader program";
+    close();
+  }
+}
+
 void OpenglWidget::initCube(float width)
 {
   qDebug() << "init Cube";
@@ -345,12 +383,12 @@ void OpenglWidget::initFloor(float width)
   //qDebug() << halfWidth << "half";
   QVector<Vertex> vertexes;
   vertexes.append(Vertex(QVector3D(  halfWidth, 0.0f,  halfWidth), QVector2D(0.0f, 1.0f), QVector3D(0.0f,1.0f,0.0f)));
-  vertexes.append(Vertex(QVector3D( -halfWidth, 0.0f,  halfWidth), QVector2D(0.0f, 0.0f), QVector3D(0.0f,1.0f,0.0f)));
   vertexes.append(Vertex(QVector3D(  halfWidth, 0.0f, -halfWidth), QVector2D(1.0f, 1.0f), QVector3D(0.0f,1.0f,0.0f)));
+  vertexes.append(Vertex(QVector3D( -halfWidth, 0.0f,  halfWidth), QVector2D(0.0f, 0.0f), QVector3D(0.0f,1.0f,0.0f)));
 
   vertexes.append(Vertex(QVector3D(  halfWidth, 0.0f, -halfWidth), QVector2D(1.0f, 1.0f), QVector3D(0.0f,1.0f,0.0f)));
-  vertexes.append(Vertex(QVector3D( -halfWidth, 0.0f,  halfWidth), QVector2D(0.0f, 0.0f), QVector3D(0.0f,1.0f,0.0f)));
   vertexes.append(Vertex(QVector3D( -halfWidth, 0.0f, -halfWidth), QVector2D(1.0f, 0.0f), QVector3D(0.0f,1.0f,0.0f)));
+  vertexes.append(Vertex(QVector3D( -halfWidth, 0.0f,  halfWidth), QVector2D(0.0f, 0.0f), QVector3D(0.0f,1.0f,0.0f)));
 
   floorVBO_.create();
   floorVBO_.bind();
@@ -411,9 +449,16 @@ void OpenglWidget::initCubeMap()
   cubeMapVBO_.release();
 }
 
-void OpenglWidget::initCustomObject()
+void OpenglWidget::initCustomObject(QString& path)
 {
-  customObject_ = new OGLObject{QString("/home/mikhail/build_dir/opengl/backpack/backpack.obj")};
+  if ( customObject_ ) {
+    delete customObject_;
+    customObject_ = nullptr;
+  }
+//  customObject_ = new OGLObject{QString("/home/mikhail/build_dir/opengl/backpack/backpack.obj")};
+//  customObject_ = new OGLObject{QString("/home/mikhail/build_dir/opengl/sphere/misha.obj")};
+  customObject_ = new OGLObject{path};
+  updateParametrs();
 }
 
 QOpenGLTexture* OpenglWidget::loadTexture(const QString& path)
@@ -451,18 +496,26 @@ QOpenGLTexture* OpenglWidget::loadCubeMap(const QVector<QString> &paths)
 
 void OpenglWidget::paintScene()
 {
-//  paintCubeMap();
-  for ( auto& light : pointLights_  ) {
-    paintLight(light.position, light.diffuse, 0.25f);
+  if ( paintCubeMap_ ) {
+    paintCubeMap();
   }
-  paintCustomObject();
-//  QVector3D containerPos1{1.0, 0.0, -3.0};
-//  paintWoodContainer(containerPos1, 1.0f );
-//  QVector3D containerPos2{2.0, 0.0, -2.0};
-//  paintWoodContainer(containerPos2, 1.0f );
-  //    paintNormalWoodContainer(containerPos1);
-  //    paintNormalWoodContainer(containerPos2);
-//  paintFloor();
+  if ( paintLights_ ) {
+    for ( auto& light : pointLights_  ) {
+      paintLight(light.position, light.diffuse, 0.25f);
+    }
+  }
+  if ( paintCubes_ ) {
+    QVector3D containerPos1{1.0, 0.0, -3.0};
+    paintWoodContainer(containerPos1, 1.0f );
+    QVector3D containerPos2{2.0, 0.0, -2.0};
+    paintWoodContainer(containerPos2, 1.0f );
+  //      paintNormalWoodContainer(containerPos1);
+  //      paintNormalWoodContainer(containerPos2);
+    paintFloor();
+  }
+  if ( paintCustomObject_ ) {
+    paintCustomObject();
+  }
 }
 
 void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale)
@@ -503,6 +556,7 @@ void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale)
   objectShader_.setAttributeBuffer(normalLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
 
   glDrawArrays(GL_TRIANGLES, 0, cubeVBO_.size());
+  tWoodContainer_->release();
 }
 
 void OpenglWidget::paintNormalCube( const QVector3D& position, float scale)
@@ -641,6 +695,7 @@ void OpenglWidget::paintFloor()
   objectShader_.setAttributeBuffer(normalLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
 
   glDrawArrays(GL_TRIANGLES, 0, floorVBO_.size());
+  tFloor_->release();
 }
 
 void OpenglWidget::paintCubeMap()
@@ -663,6 +718,7 @@ void OpenglWidget::paintCubeMap()
 
   glDrawArrays(GL_TRIANGLES, 0, 36);
   glDepthMask(GL_TRUE);
+  tCubeMap_->release();
 }
 
 void OpenglWidget::paintCustomObject()
@@ -670,15 +726,16 @@ void OpenglWidget::paintCustomObject()
   QMatrix4x4 model;
   model.setToIdentity();
   model.rotate(rotate_);
-//  model.translate(QVector3D{0.0f, float(-kCubeWidth/2), 0.0f});
-  customObjectShader_.bind();
+  model.scale(0.5);
+  PBRShader_.bind();
   auto view = camera_.getView();
 
-  customObjectShader_.setUniformValue("model", model);
-  customObjectShader_.setUniformValue("view", view);
-  customObjectShader_.setUniformValue("projection", projection_);
-
-  customObject_->draw(customObjectShader_);
+  PBRShader_.setUniformValue("model", model);
+  PBRShader_.setUniformValue("view", view);
+  PBRShader_.setUniformValue("projection", projection_);
+  if( customObject_ ) {
+    customObject_->draw(PBRShader_);
+  }
 
 }
 
@@ -687,18 +744,20 @@ void OpenglWidget::updateParametrs()
   auto rect = geometry();
   resizeGL(rect.width(), rect.height());
   setLightShader(objectShader_);
-  setLightShader(customObjectShader_);
+  setLightShader(PBRShader_);
   update();
 }
 
 void OpenglWidget::changeLightPosSlot()
 {
   double velocity = 0.0001;
-  pointLights_[0].position = QVector3D{6.0f * float(sin(QDateTime::currentMSecsSinceEpoch()*velocity * M_PI)), 2.0f, float(cos(QDateTime::currentMSecsSinceEpoch()*velocity  * M_PI)) * 6.0f};
+  pointLights_[0].position = QVector3D{3.0f * float(sin(QDateTime::currentMSecsSinceEpoch()*velocity * M_PI)), 2.0f, float(cos(QDateTime::currentMSecsSinceEpoch()*velocity  * M_PI)) * 3.0f};
   QString name = QString("pointLights[%1].%2").arg(0);
   objectShader_.setUniformValue( QString(name).arg("position") .toStdString().c_str(), pointLights_[0].position);
-  angle_++;
-  rotate_ = QQuaternion::fromAxisAndAngle(QVector3D{1.0,1.0,0.0}, angle_);
+  if ( rotateFlag_ ) {
+    angle_++;
+    rotate_ = QQuaternion::fromAxisAndAngle(QVector3D{1.0,1.0,0.0}, angle_);
+  }
   updateParametrs();
 }
 

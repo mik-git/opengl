@@ -35,8 +35,13 @@ public:
   void goRight();
   void rotateCamera(const QPoint& diff );
   void switchLamp();
+  void setRotate( bool flag );
+  void setPaintCubeMap( bool flag );
+  void setPaintCubes( bool flag );
+  void setPaintCustomObject( bool flag );
   void setLightColor(int i, QVector3D color);
   void setLightPosition(int i, QVector3D position);
+  void initCustomObject( QString& path );
 
 protected:
   void initializeGL() override;
@@ -51,11 +56,11 @@ private:
   void initSkyBoxShader();
   void initNormalShader();
   void initCustomObjectShader();
+  void initPBRShader();
   void initScene();
   void initCube(float width);
   void initFloor(float width);
   void initCubeMap();
-  void initCustomObject();
   QOpenGLTexture* loadTexture( const QString& path );
   QOpenGLTexture* loadCubeMap( const QVector<QString>& paths );
   void paintScene();
@@ -81,6 +86,7 @@ private:
   QOpenGLShaderProgram normalShader_;
   QOpenGLShaderProgram skyBoxShader_;
   QOpenGLShaderProgram customObjectShader_;
+  QOpenGLShaderProgram PBRShader_;
   QOpenGLTexture* tWoodContainer_ = nullptr;
   QOpenGLTexture* tFloor_ = nullptr;
   QOpenGLTexture* tCubeMap_ = nullptr;
@@ -92,8 +98,12 @@ private:
   float nearPlane_ = 0.1f;
   float farPlane_ = 10.0f;
   bool lamp_ = false;
+  bool rotateFlag_ = false;
+  bool paintCubes_ = true;
+  bool paintLights_ = true;
+  bool paintCustomObject_ = false;
+  bool paintCubeMap_ = true;
   Camera camera_;
-  QTimer timer_;
   QVector<LightPos> pointLights_;
   QQuaternion rotate_;
   float angle_ = 0;

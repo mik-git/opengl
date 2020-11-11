@@ -19,5 +19,7 @@
         <file>shaders/vSkyBoxShader.vert</file>
         <file>shaders/fCustomObjectShader.frag</file>
         <file>shaders/vCustomObjectShader.vert</file>
+        <file>shaders/fPBRShader.frag</file>
+        <file>shaders/vPBRShader.vert</file>
     </qresource>
 </RCC>

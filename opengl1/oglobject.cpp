@@ -191,22 +191,40 @@ void OGLObject::loadMtl(const QString& path)
         material->setIllum(tokenList.at(1).toFloat());
       }
     }
-    else if (tokenList.first() == QString("map_Kd")) {
+    else if (tokenList.first() == QString("map_Kd")) { // albedo
       if ( material ) {
         auto tName = filePathFromToken(tokenList);
         material->loadTextureAlbedo(tName);
       }
     }
-    else if (tokenList.first() == QString("map_Bump")) {
+    else if (tokenList.first() == QString("map_Bump")) {  // normal
       if ( material ) {
         auto tName = filePathFromToken(tokenList);
         material->loadTextureNormal(tName);
       }
     }
-    else if (tokenList.first() == QString("map_Ks")) {
+    else if (tokenList.first() == QString("map_Ks")) { // specular
       if ( material ) {
         auto tName = filePathFromToken(tokenList);
         material->loadTextureSpecular(tName);
+      }
+    }
+    else if (tokenList.first() == QString("map_Pm")) { // metallic
+      if ( material ) {
+        auto tName = filePathFromToken(tokenList);
+        material->loadTextureMetallic(tName);
+      }
+    }
+    else if (tokenList.first() == QString("map_Pr")) { // roughness
+      if ( material ) {
+        auto tName = filePathFromToken(tokenList);
+        material->loadTextureRoughness(tName);
+      }
+    }
+    else if (tokenList.first() == QString("map_Ka")) { // AO
+      if ( material ) {
+        auto tName = filePathFromToken(tokenList);
+        material->loadTextureAmbientOcclusion(tName);
       }
     }
   }

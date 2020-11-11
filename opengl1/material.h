@@ -14,6 +14,13 @@ public:
 
   Material& operator=(const Material&) = delete;
 
+  bool hasTextureAlbedo();
+  bool hasTextureNormal();
+  bool hasTextureSpecular();
+  bool hasTextureMetallic();
+  bool hasTextureRoughness();
+  bool hasTextureAmbientOcclusion();
+
   void setName( const QString& name ) { name_ = name; }
   void setSpecularExponent( float Ns ) { Ns_ = Ns; }
   void setDensity( float Ni ) { Ni_ = Ni; }
@@ -30,6 +37,9 @@ public:
   void loadTextureAlbedo(const QString& path);
   void loadTextureNormal(const QString& path);
   void loadTextureSpecular(const QString& path);
+  void loadTextureMetallic(const QString& path);
+  void loadTextureRoughness(const QString& path);
+  void loadTextureAmbientOcclusion(const QString& path);
 
   QString name() { return name_; }
   float specularExponent() { return Ns_; }
@@ -44,6 +54,13 @@ public:
   QOpenGLTexture* textureNormal() { return tNormal_; }
   QOpenGLTexture* textureSpecular() { return tSpecular_; }
 
+  QOpenGLTexture* textureMetallic() { return  tMetallic_; }
+  QOpenGLTexture* textureRoughness() { return tRoughness_; }
+  QOpenGLTexture* textureAmbientOcclusion() { return tAO_; }
+  float metallic() { return metallic_; }
+  float roughness() { return roughness_; }
+  float ao() { return ao_; }
+
 private:
   QOpenGLTexture* loadTexture(const QString& path);
 
@@ -53,13 +70,19 @@ private:
   float Ni_;
   float d_;
   float illum_;
+  float metallic_ = 0.0f;
+  float roughness_ = 0.0f;
+  float ao_ = 1.0f;
   QVector3D Ka_;
   QVector3D Kd_;
   QVector3D Ks_;
   QVector3D Ke_;
-  QOpenGLTexture* tAlbedo_;
-  QOpenGLTexture* tNormal_;
-  QOpenGLTexture* tSpecular_;
+  QOpenGLTexture* tAlbedo_ = nullptr;
+  QOpenGLTexture* tNormal_ = nullptr;
+  QOpenGLTexture* tSpecular_ = nullptr;
+  QOpenGLTexture* tMetallic_ = nullptr;
+  QOpenGLTexture* tRoughness_ = nullptr;
+  QOpenGLTexture* tAO_ = nullptr;
 
 
 };
