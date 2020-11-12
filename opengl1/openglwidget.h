@@ -61,6 +61,7 @@ private:
   void initCube(float width);
   void initFloor(float width);
   void initCubeMap();
+  void initTest();
   QOpenGLTexture* loadTexture( const QString& path );
   QOpenGLTexture* loadCubeMap( const QVector<QString>& paths );
   void paintScene();
@@ -71,6 +72,7 @@ private:
   void paintFloor();
   void paintCubeMap();
   void paintCustomObject();
+  void paintTest(QOpenGLShaderProgram& shader);
   void updateParametrs();
   void defaultPointsLights();
 
@@ -94,6 +96,8 @@ private:
   QOpenGLBuffer cubeVBO_;
   QOpenGLBuffer floorVBO_;
   QOpenGLBuffer cubeMapVBO_;
+  QOpenGLBuffer testVBO_;
+  QOpenGLBuffer testEBO_{QOpenGLBuffer::IndexBuffer};
   float fow_ = 45.0f;
   float nearPlane_ = 0.1f;
   float farPlane_ = 10.0f;

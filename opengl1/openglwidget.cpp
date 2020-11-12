@@ -153,7 +153,7 @@ void OpenglWidget::initializeGL()
   qDebug() << "initGL";
   glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CULL_FACE);
+//  glEnable(GL_CULL_FACE);
 
   initScene();
   initShaders();
@@ -167,6 +167,7 @@ void OpenglWidget::initScene()
   initCube(kCubeWidth);
   initFloor(kFloorWidth);
   initCubeMap();
+  initTest();
 //  auto path = QString("/home/mikhail/build_dir/opengl/backpack/backpack.obj");
 //  initCustomObject(path);
 }
@@ -450,6 +451,53 @@ void OpenglWidget::initCubeMap()
   cubeMapVBO_.release();
 }
 
+void OpenglWidget::initTest()
+{
+  QVector<Vertex> vertexes;
+  QVector<GLuint> indexes;
+
+  const unsigned int X_SEGMENTS = 64;
+  const unsigned int Y_SEGMENTS = 64;
+  const float PI = 3.14159265359;
+  for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)  {
+    for (unsigned int x = 0; x <= X_SEGMENTS; ++x)    {
+      float xSegment = (float)x / (float)X_SEGMENTS;
+      float ySegment = (float)y / (float)Y_SEGMENTS;
+      float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+      float yPos = std::cos(ySegment * PI);
+      float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+      vertexes.append(Vertex(QVector3D{xPos, yPos, zPos},QVector2D{xSegment, ySegment},QVector3D{xPos, yPos, zPos}));
+    }
+  }
+
+  bool oddRow = false;
+  for (unsigned int y = 0; y < Y_SEGMENTS; ++y)  {
+    if (!oddRow) {
+      for (unsigned int x = 0; x <= X_SEGMENTS; ++x)      {
+        indexes.append(y       * (X_SEGMENTS + 1) + x);
+        indexes.append((y + 1) * (X_SEGMENTS + 1) + x);
+      }
+    }
+    else    {
+      for (int x = X_SEGMENTS; x >= 0; --x)      {
+        indexes.append((y + 1) * (X_SEGMENTS + 1) + x);
+        indexes.append(y       * (X_SEGMENTS + 1) + x);
+      }
+    }
+    oddRow = !oddRow;
+  }
+
+  testVBO_.create();
+  testVBO_.bind();
+  testVBO_.allocate(vertexes.constData(), vertexes.size() * sizeof (Vertex));
+  testVBO_.release();
+
+  testEBO_.create();
+  testEBO_.bind();
+  testEBO_.allocate(indexes.constData(), indexes.size() * sizeof (GLuint));
+  testEBO_.release();
+}
+
 void OpenglWidget::initCustomObject(QString& path)
 {
   if ( customObject_ ) {
@@ -517,6 +565,7 @@ void OpenglWidget::paintScene()
   if ( paintCustomObject_ ) {
     paintCustomObject();
   }
+//  paintTest(PBRShader_);
 }
 
 void OpenglWidget::paintWoodContainer( const QVector3D& position, float scale)
@@ -733,11 +782,121 @@ void OpenglWidget::paintCustomObject()
 
   PBRShader_.setUniformValue("model", model);
   PBRShader_.setUniformValue("view", view);
+  PBRShader_.setUniformValue("viewPos", camera_.position());
   PBRShader_.setUniformValue("projection", projection_);
   if( customObject_ ) {
     customObject_->draw(PBRShader_);
   }
 
+}
+
+void OpenglWidget::paintTest(QOpenGLShaderProgram& shader)
+{
+  if (!shader.isLinked() || !testVBO_.isCreated() || !testEBO_.isCreated() ) {
+    return;
+  }
+  shader.bind();
+  QMatrix4x4 model;
+  model.setToIdentity();
+//  model.rotate(rotate_);
+  PBRShader_.bind();
+  auto view = camera_.getView();
+
+  shader.setUniformValue("model", model);
+  shader.setUniformValue("view", view);
+  shader.setUniformValue("viewPos", camera_.position());
+  shader.setUniformValue("projection", projection_);
+  if ( false ) {
+//    material_->textureAlbedo()->bind(0);
+    shader.setUniformValue("albedo0",0);
+    shader.setUniformValue("useAlbedoMap",true);
+  }
+  else {
+    shader.setUniformValue("useAlbedoMap", false);
+  }
+  if ( false ) {
+//    material_->textureNormal()->bind(1);
+    shader.setUniformValue("normal0",1);
+    shader.setUniformValue("useNormalMap",true);
+  }
+  else {
+    shader.setUniformValue("useNormalMap",false);
+  }
+  if ( false){
+//    material_->textureMetallic()->bind(2);
+    shader.setUniformValue("metallic0",2);
+    shader.setUniformValue("useMetallicMap",true);
+  }
+  else {
+    shader.setUniformValue("material.metallic", /*material_->metallic()*/ 0.0f);
+    shader.setUniformValue("useMetallicMap",false);
+  }
+  if( false ) {
+//    material_->textureRoughness()->bind(3);
+    shader.setUniformValue("roughness0",3);
+    shader.setUniformValue("useRoughnessMap",true);
+  }
+  else {
+    shader.setUniformValue("material.roughness", /*material_->roughness()*/ 0.0f);
+    shader.setUniformValue("useRoughnessMap",false);
+  }
+  if ( false ) {
+//    material_->textureAmbientOcclusion()->bind(4);
+    shader.setUniformValue("ao0",4);
+    shader.setUniformValue("useAOMap",true);
+  }
+  else {
+    shader.setUniformValue("material.ao", /*material_->ao()*/ 1.0f);
+    shader.setUniformValue("useAOMap",false);
+  }
+  shader.setUniformValue("material.specularExponent", /*material_->specularColor()*/ 64);
+  shader.setUniformValue("material.ambientColor", /*material_->ambientColor()*/ QVector3D{0.5f,0.0f,0.0f});
+  shader.setUniformValue("material.diffuseColor", /*material_->diffuseColor()*/ QVector3D{0.5f,0.1f,0.1f});
+  shader.setUniformValue("material.specularColor", /*material_->specularColor()*/ QVector3D{0.8f,0.8f,0.8f});
+
+
+  testVBO_.bind();
+
+  int offset = 0;
+
+  auto vertLoc = shader.attributeLocation("inPos");
+  shader.enableAttributeArray(vertLoc);
+//    qDebug() << vertLoc;
+  shader.setAttributeBuffer(vertLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
+
+  offset += sizeof (QVector3D);
+
+  auto texLoc = shader.attributeLocation("inTexCoord");
+  shader.enableAttributeArray(texLoc);
+//    qDebug() << texLoc;
+  shader.setAttributeBuffer(texLoc, GL_FLOAT, offset, 2, sizeof(Vertex));
+
+  offset += sizeof (QVector2D);
+
+  auto normalLoc = shader.attributeLocation("inNormal");
+  shader.enableAttributeArray(normalLoc);
+//    qDebug() << normalLoc;
+  shader.setAttributeBuffer(normalLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
+
+  offset += sizeof (QVector3D);
+
+  auto tangentLoc = shader.attributeLocation("inTangent");
+  shader.enableAttributeArray(tangentLoc);
+  shader.setAttributeBuffer(tangentLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
+
+  offset += sizeof (QVector3D);
+
+  auto bitangentLoc = shader.attributeLocation("inBitangent");
+  shader.enableAttributeArray(bitangentLoc);
+  shader.setAttributeBuffer(bitangentLoc, GL_FLOAT, offset, 3, sizeof(Vertex));
+
+
+  testEBO_.bind();
+  glDrawElements(GL_TRIANGLE_STRIP, testEBO_.size(), GL_UNSIGNED_INT, nullptr);
+
+  testEBO_.release();
+  testVBO_.release();
+  shader.release();
 }
 
 void OpenglWidget::updateParametrs()

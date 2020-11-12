@@ -80,7 +80,6 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0);
 vec3 addDirLightPBR(LightDirect light, vec3 N, vec3 V, vec3 albedo, float metallic, float roughness, float ao);
 vec3 addPosLightPBR(vec3 N, vec3 V, vec3 albedo, float metallic, float roughness, float ao);
 vec3 addLampPBR(Lamp light, vec3 V, vec3 N, vec3 albedo, float metallic, float roughness, float ao);
-
 void main(void)
 {
   vec3 norm;
@@ -97,7 +96,7 @@ void main(void)
 
   vec3 albedo;
   if (useAlbedoMap) {
-    //  vec3 albedo = pow(texture2D(albedo0, texCoord).rgb, vec3(2.2));
+//      albedo = pow(texture2D(albedo0, texCoord).rgb, vec3(2.2));
     albedo = texture2D(albedo0, texCoord).rgb;
   }
   else {
@@ -111,7 +110,6 @@ void main(void)
   else {
     metallic = material.metallic;
   }
-  metallic = 1.0 - metallic;
   float roughness;
   if (useRoughnessMap) {
    roughness = texture2D(roughness0, texCoord).r;
@@ -139,7 +137,6 @@ void main(void)
   //Lamp
   result += addLampPBR(lamp, norm,viewDir, albedo, metallic, roughness, ao);
   FragColor = vec4(result, 1.0f);
-//  FragColor = vec4(vec3(roughness), 1.0f);
 }
 
 vec3 addDirLightPBR(LightDirect light, vec3 N, vec3 V,vec3 albedo, float metallic, float roughness, float ao)
@@ -154,11 +151,11 @@ vec3 addDirLightPBR(LightDirect light, vec3 N, vec3 V,vec3 albedo, float metalli
 
   float NDF = distributionGGX( N, H, roughness);
   float G = geometrySmith( N, V, L, roughness);
-  vec3 F = fresnelSchlick( max( dot( N, L ), 0.0 ), F0);
+  vec3 F = fresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
 
   vec3 kS = F;
   vec3 kD = vec3(1.0) - kS;
-  kD *= (1.0 - metallic);
+  kD *= 1.0 - metallic;
 
   vec3 numenator = NDF * G *F;
   float denominator = 4.0 * max( dot( N ,V), 0.0 ) * max( dot( N,L), 0.0 );
@@ -172,8 +169,8 @@ vec3 addDirLightPBR(LightDirect light, vec3 N, vec3 V,vec3 albedo, float metalli
   vec3 ambient = vec3(0.1) * albedo * ao;
   vec3 color = ambient +  Lo;
 
-//  color = color/(color + vec3(1.0));
-//  color = pow(color, vec3(1.0/2.2));
+  color = color/(color + vec3(1.0));
+  color = pow(color, vec3(1.0/2.2));
   return color;
 }
 
@@ -182,11 +179,8 @@ vec3 addPosLightPBR(vec3 N, vec3 V, vec3 albedo, float metallic, float roughness
   vec3 F0 = normalize(vec3(0.04) );
   F0 = mix(F0, albedo, metallic);
 
-//  vec3 Lo = vec3(0.0);
-  vec3 color = vec3(0.0);
-  vec3 ambient = vec3(0.1) * albedo * ao;
+  vec3 Lo = vec3(0.0);
   for ( int i = 0; i < NR_POINT_LIGHTS; ++i ) {
-    vec3 Lo = vec3(0.0);
     vec3 L = normalize( pointLights[i].position - fragPos );
     vec3 H = normalize(V + L);
     float distance = length( pointLights[i].position - fragPos );
@@ -196,11 +190,11 @@ vec3 addPosLightPBR(vec3 N, vec3 V, vec3 albedo, float metallic, float roughness
 
     float NDF = distributionGGX( N, H, roughness);
     float G = geometrySmith( N, V, L, roughness);
-    vec3 F = fresnelSchlick( max( dot( N, L ), 0.0 ), F0);
+    vec3 F = fresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
 
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
-    kD *= (1.0 - metallic);
+    kD *= 1.0 - metallic;
 
     vec3 numenator = NDF * G *F;
     float denominator = 4.0 * max( dot( N ,V), 0.0 ) * max( dot( N,L), 0.0 );
@@ -208,15 +202,14 @@ vec3 addPosLightPBR(vec3 N, vec3 V, vec3 albedo, float metallic, float roughness
     vec3 specular = numenator / max( denominator, 0.001 );
 
     float NdotL = max( dot( N ,L), 0.0);
-    Lo = (kD * albedo/PI + specular) * radiance * NdotL;
-    color += ambient +  Lo;
+    Lo += (kD * albedo/PI + specular) * radiance * NdotL;
   }
 
 
-//  vec3 ambient = vec3(0.1) * albedo * ao;
-//  vec3 color = ambient +  Lo;
+  vec3 ambient = vec3(0.03) * albedo * ao;
+  vec3 color = ambient +  Lo;
 
-//  color = color/(color + vec3(1.0));
+  color = color/(color + vec3(1.0));
 //  color = pow(color, vec3(1.0/2.2));
   return color;
 }
@@ -236,7 +229,7 @@ vec3 addLampPBR( Lamp light, vec3 V, vec3 N, vec3 albedo, float metallic, float 
 
   float NDF = distributionGGX( N, H, roughness);
   float G = geometrySmith( N, V, L, roughness);
-  vec3 F = fresnelSchlick( max( dot( N, L ), 0.0 ), F0);
+  vec3 F = fresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
 
   vec3 kS = F;
   vec3 kD = vec3(1.0) - kS;
@@ -258,7 +251,7 @@ vec3 addLampPBR( Lamp light, vec3 V, vec3 N, vec3 albedo, float metallic, float 
   vec3 ambient = albedo * ao * radiance * intensity;
   vec3 color = ambient +  Lo;
 
-//  color = color/(color + vec3(1.0));
+  color = color/(color + vec3(1.0));
 //  color = pow(color, vec3(1.0/2.2));
   return color;
 }
@@ -274,7 +267,7 @@ float distributionGGX(vec3 N, vec3 H, float roughness)
     float denom = (NdotH2 * (a2 - 1.0) + 1.0);
     denom = PI * denom * denom;
 
-    return num / denom;
+    return num / max(denom,0.001);
 }
 
 float geometrySchlickGGX(float NdotV, float roughness)
@@ -285,7 +278,7 @@ float geometrySchlickGGX(float NdotV, float roughness)
     float num = NdotV;
     float denom = NdotV * (1.0 - k) + k;
 
-    return num / denom;
+    return num / max(denom,0.001);
 }
 float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 {
