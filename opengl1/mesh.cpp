@@ -106,8 +106,24 @@ void Mesh::draw(QOpenGLShaderProgram& shader)
 
     EBO_.release();
     VBO_.release();
-    material_->textureAlbedo()->release();
-    material_->textureNormal()->release();
+    if ( material_->hasTextureAlbedo()) {
+      material_->textureAlbedo()->release();
+    }
+    if ( material_->hasTextureNormal()) {
+      material_->textureNormal()->release();
+    }
+    if (material_->hasTextureMetallic()) {
+      material_->textureMetallic()->release();
+    }
+    if (material_->hasTextureSpecular()) {
+      material_->textureSpecular()->release();
+    }
+    if (material_->hasTextureRoughness()) {
+      material_->textureRoughness()->release();
+    }
+    if (material_->hasTextureAmbientOcclusion()) {
+      material_->textureAmbientOcclusion()->release();
+    }
     shader.release();
 }
 
